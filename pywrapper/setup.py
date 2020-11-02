@@ -18,10 +18,10 @@ def check_for_flag(flag_str, truemsg=False, falsemsg=False):
 	    enabled = False
 
 	if enabled and not truemsg == False:
-		print truemsg
+		print(truemsg)
 	elif not enabled and not falsemsg == False:
-		print falsemsg
-		print "   $ sudo "+flag_str+"=ON python setup.py install"
+		print(falsemsg)
+		print("   $ sudo "+flag_str+"=ON python setup.py install")
 	return enabled
 
 use_cuda = check_for_flag("WITH_CUDA", \
@@ -31,9 +31,9 @@ trace    = check_for_flag("TRACE", \
 	"Compiling with trace enabled for Bresenham's Line", \
 	"Compiling without trace enabled for Bresenham's Line")
 
-print 
-print "--------------"
-print 
+print()
+print("--------------")
+print()
 
 # support for compiling in clang
 if platform.system().lower() == "darwin":
@@ -62,10 +62,10 @@ def locate_cuda():
     # print os.environ
     # first check if the CUDAHOME env variable is in use
     if os.path.isdir("/usr/local/cuda-7.5"):
-    	home = "/usr/local/cuda-7.5"
+        home = "/usr/local/cuda-7.5"
         nvcc = pjoin(home, 'bin', 'nvcc')
     elif os.path.isdir("/usr/local/cuda"):
-    	home = "/usr/local/cuda"
+        home = "/usr/local/cuda"
         nvcc = pjoin(home, 'bin', 'nvcc')
     elif 'CUDAHOME' in os.environ:
         home = os.environ['CUDAHOME']
@@ -161,30 +161,30 @@ class custom_build_ext(build_ext):
         build_ext.build_extensions(self)
 
 if use_cuda:
-	ext = Extension("range_libc", sources, 
-					extra_compile_args = {'gcc': compiler_flags, 'nvcc': nvcc_flags},
-					extra_link_args = ["-std=c++11"],
-					include_dirs = include_dirs,
-					library_dirs=[CUDA['lib64']],
-					libraries=['cudart'],
-					runtime_library_dirs=[CUDA['lib64']],
-					depends=depends,
-					language="c++",)
-	setup(name='range_libc',
-		author='Corey Walsh',
-		version='0.1',
-		ext_modules = [ext],
-		# inject our custom trigger
-		cmdclass={'build_ext': custom_build_ext})
+    ext = Extension("range_libc", sources, 
+                    extra_compile_args = {'gcc': compiler_flags, 'nvcc': nvcc_flags},
+                    extra_link_args = ["-std=c++11"],
+                    include_dirs = include_dirs,
+                    library_dirs=[CUDA['lib64']],
+                    libraries=['cudart'],
+                    runtime_library_dirs=[CUDA['lib64']],
+                    depends=depends,
+                    language="c++",)
+    setup(name='range_libc',
+          author='Corey Walsh',
+          version='0.1',
+          ext_modules=[ext],
+          # inject our custom trigger
+          cmdclass={'build_ext': custom_build_ext})
 else:
-	setup(ext_modules=[
-			Extension("range_libc", sources, 
-				extra_compile_args = compiler_flags,
-				extra_link_args = ["-std=c++11"],
-				include_dirs = include_dirs,
-				depends=["../includes/*.h"],
-				language="c++",)],
-		name='range_libc',
-		author='Corey Walsh',
-		version='0.1',
-	    cmdclass = {'build_ext': build_ext})
+    ext = Extension("range_libc", sources,
+                    extra_compile_args = compiler_flags,
+                    extra_link_args = ["-std=c++11"],
+                    include_dirs = include_dirs,
+                    depends=["../includes/*.h"],
+                    language="c++",)
+    setup(name='range_libc',
+          author='Corey Walsh',
+          version='0.1',
+          ext_modules=[ext],
+          cmdclass = {'build_ext': build_ext})
