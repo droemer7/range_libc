@@ -29,7 +29,7 @@ use_cuda = check_for_flag("WITH_CUDA", \
 	"Compiling without CUDA support. To enable CUDA use:")
 trace    = check_for_flag("TRACE", \
 	"Compiling with trace enabled for Bresenham's Line", \
-	"Compiling without trace enabled for Bresenham's Line")
+	"Compiling without trace enabled for Bresenham's Line. To enable trace use:")
 
 print()
 print("--------------")
