@@ -28,9 +28,9 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #ifndef RANGE_LIB_H
 #define RANGE_LIB_H
 
-#include "vendor/lodepng/lodepng.h"
-#include "vendor/distance_transform.h"
-#include "includes/RangeUtils.h"
+#include "../vendor/lodepng/lodepng.h"
+#include "../vendor/distance_transform.h"
+#include "RangeUtils.h"
 
 #include <stdio.h>      /* printf */
 #include <cstdlib>
@@ -131,16 +131,25 @@ namespace ranges {
 		#endif
 
 		// this stuff is for ROS integration, not necessary for raw usage
-		#if ROS_WORLD_TO_GRID_CONVERSION == 1
 		float world_scale; 
 		float world_angle;
 		float world_origin_x;
 		float world_origin_y;
 		float world_sin_angle;
 		float world_cos_angle;
-		#endif
 
-		OMap(int w, int h) : width(w), height(h), fn(""), has_error(false) {
+		OMap(int w, int h) : 
+		    width(w), 
+			height(h),
+            world_scale(1.0),
+		    world_angle(0.0),
+		    world_origin_x(0.0),
+		    world_origin_y(0.0),
+		    world_sin_angle(0.0),
+		    world_cos_angle(1.0),
+			fn(""), 
+			has_error(false) 
+	    {
 			for (int i = 0; i < w; ++i) {
 				std::vector<bool> y_axis;
 				for (int q = 0; q < h; ++q) y_axis.push_back(false);
@@ -156,7 +165,16 @@ namespace ranges {
 		}
 
 		OMap(std::string filename) : OMap(filename, 128) {}
-		OMap(std::string filename, float threshold) : fn(filename), has_error(false) {
+		OMap(std::string filename, float threshold) : 
+		    world_scale(1.0),
+		    world_angle(0.0),
+		    world_origin_x(0.0),
+		    world_origin_y(0.0),
+		    world_sin_angle(0.0),
+		    world_cos_angle(1.0),
+			fn(filename), 
+			has_error(false) 
+		{
 			unsigned error;
 			unsigned char* image;
 
@@ -503,6 +521,7 @@ namespace ranges {
 
 			for (int i = 0; i < num_particles; ++i)
 			{
+				#if ROS_WORLD_TO_GRID_CONVERSION == 1
 				x_world = ins[i*3];
 				y_world = ins[i*3+1];
 				theta_world = ins[i*3+2];
@@ -513,9 +532,14 @@ namespace ranges {
 				temp = x;
 				x = world_cos_angle*x - world_sin_angle*y;
 				y = world_sin_angle*temp + world_cos_angle*y;
+				#endif
 
 				for (int a = 0; a < num_angles; ++a)
+					#if ROS_WORLD_TO_GRID_CONVERSION == 1
 					outs[i*num_angles+a] = calc_range(y, x, theta - angles[a]) * world_scale;
+					#else
+				    outs[i*num_angles+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]);
+					#endif
 			}
 		}
 
@@ -531,7 +555,10 @@ namespace ranges {
 			}
 		}
 		void eval_sensor_model(float * obs, float * ranges, double * outs, int rays_per_particle, int particles) {
+			#if ROS_WORLD_TO_GRID_CONVERSION == 1
 			float inv_world_scale = 1.0 / map.world_scale;
+			#endif
+
 			// do no allocations in the main loop
 			double weight;
 			float r;
@@ -544,9 +571,15 @@ namespace ranges {
 				weight = 1.0;
 				for (j = 0; j < rays_per_particle; ++j)
 				{
+					#if ROS_WORLD_TO_GRID_CONVERSION == 1
 					r = obs[j] * inv_world_scale;
-					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
 					d = ranges[i*rays_per_particle+j] * inv_world_scale;
+					#else
+					r = obs[j];
+					d = ranges[i*rays_per_particle+j];
+					#endif
+
+					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
 					d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
 					weight *= sensor_model[(int)r][(int)d];
 				}
@@ -575,6 +608,7 @@ namespace ranges {
 			float y;
 			float temp;
 			float theta;
+			#endif
 
 			// do no allocations in the main loop
 			double weight;
@@ -585,6 +619,7 @@ namespace ranges {
 
 			for (i = 0; i < num_particles; ++i)
 			{
+				#if ROS_WORLD_TO_GRID_CONVERSION == 1
 				x_world = ins[i*3];
 				y_world = ins[i*3+1];
 				theta_world = ins[i*3+2];
@@ -595,20 +630,25 @@ namespace ranges {
 				temp = x;
 				x = world_cos_angle*x - world_sin_angle*y;
 				y = world_sin_angle*temp + world_cos_angle*y;
+				#endif
 
 				weight = 1.0;
 				for (a = 0; a < num_angles; ++a)
 				{
+					#if ROS_WORLD_TO_GRID_CONVERSION == 1
 					d = calc_range(y, x, theta - angles[a]);
-					d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
-
 					r = obs[a] * inv_world_scale;
+					#else
+					d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]);
+					r = obs[a];
+					#endif
+
+					d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
 					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
 					weight *= sensor_model[(int)r][(int)d];
 				}
 				weights[i] = weight;
 			}
-			#endif
 		}
 
 		// this is to compute a lidar sensor model using radial (calc_range_pair) optimizations
@@ -627,6 +667,7 @@ namespace ranges {
 
 			// avoid allocation on every loop iteration
 			float x_world, y_world, theta_world, x, y, temp, theta = 0.0;
+			#endif
 
 			// do no allocations in the main loop
 			int i, a = 0;
@@ -647,6 +688,7 @@ namespace ranges {
 
 			for (i = 0; i < num_particles; ++i)
 			{
+				#if ROS_WORLD_TO_GRID_CONVERSION == 1
 				x_world = ins[i*3];
 				y_world = ins[i*3+1];
 				theta_world = ins[i*3+2];
@@ -657,27 +699,35 @@ namespace ranges {
 				temp = x;
 				x = world_cos_angle*x - world_sin_angle*y;
 				y = world_sin_angle*temp + world_cos_angle*y;
+				#endif
 
 				angle = min_angle;
 				for (a = 0; a <= max_pairwise_index; ++a) {
+					#if ROS_WORLD_TO_GRID_CONVERSION == 1
 					std::tie(r, r_inv) = calc_range_pair(y,x,theta - angle);
 					outs[i*num_rays+a] = r * world_scale;
 					outs[i*num_rays+a+index_offset] = r_inv * world_scale;
+					#else
+					std::tie(r, r_inv) = calc_range_pair(ins[i*3], ins[i*3+1], ins[i*3+2] - angle);
+					outs[i*num_rays+a] = r;
+					outs[i*num_rays+a+index_offset] = r_inv;
+					#endif
 					angle += step;
 				}
 
 				for (a = max_pairwise_index + 1; a < index_offset; ++a) {
+					#if ROS_WORLD_TO_GRID_CONVERSION == 1
 					outs[i*num_rays+a] = calc_range(y,x,theta - angle) * world_scale;
+					#else
+					outs[i*num_rays+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angle);
 					angle += step;
+					#endif
 				}
 			}
-			#endif
 			return;
 		}
 
-
-
-		#endif
+		#endif // SENSOR_MODEL_HELPERS
 	
 	protected:
 		OMap map;

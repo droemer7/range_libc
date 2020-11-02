@@ -3,7 +3,7 @@ build/
 tmp/
 pywrapper/*.so
 pywrapper/*.cpp
-pywrapper/test.png
+pywrapper/*.png
 .DS_Store
 paper/data/basement
 paper/data/synthetic
