@@ -1,8 +1,6 @@
 import range_libc
 import numpy as np
 import itertools, time
-# import matplotlib.mlab as mlab
-# import matplotlib.pyplot as plt
 
 ####################################################################################################
 #
@@ -46,23 +44,13 @@ print("Initializing: glt")
 glt = range_libc.PyGiantLUTCast(testMap, 500, 108)
 print("")
 
+# For testing / debugging
 def fixed_scan(num_ranges, print_sample=True):
 	ranges_np = np.zeros(num_ranges, dtype=np.float32)		
-	queries_np = np.zeros((num_ranges, 3), dtype=np.float32)
-	queries_np[:,0] = testMap.width() / 2.0
-	queries_np[:,1] = testMap.height() / 2.0
-	queries_np[:,2] = np.linspace(0, 2.0 * np.pi, num_ranges)
-	
-	# Conversions so that calc_range() is equivalent to calc_range_many()
-	# See RangeLib.h RangeMethod::numpy_calc_range(), which is called by 
-	# calc_range_many())
-	if range_libc.USE_ROS_WORLD_TO_GRID_CONVERSION:
-		queries_slow = np.zeros(queries_np.shape)
-		queries_slow[:,0] = queries_np[:,1]
-		queries_slow[:,1] = queries_np[:,0]
-		queries_slow[:,2] = -queries_np[:,2] - (3.0 * np.pi / 2.0)
-	else:
-		queries_slow = np.copy(queries_np)
+	queries = np.zeros((num_ranges, 3), dtype=np.float32)
+	queries[:,0] = testMap.width() / 2.0
+	queries[:,1] = testMap.height() / 2.0
+	queries[:,2] = np.linspace(0, 2.0 * np.pi, num_ranges)
 
 	if print_sample:
 		sample = np.random.random(5) * num_ranges
@@ -70,8 +58,8 @@ def fixed_scan(num_ranges, print_sample=True):
 	def scan(obj, name):
 		print("Running " + name + ":")
 		print("--------------------")
-		obj.calc_range_many(queries_np, ranges_np)	
-		ranges_slow = np.array([obj.calc_range(*q) for q in queries_slow],
+		obj.calc_range_many(queries, ranges_np)	
+		ranges_slow = np.array([obj.calc_range(*q) for q in queries],
 		                       dtype=np.float32)
 
 		if print_sample:
@@ -88,39 +76,29 @@ def fixed_scan(num_ranges, print_sample=True):
 	scan(cddt, "cddt")
 	scan(glt, "glt")
 
+# For validation
 def random_scan(num_ranges):
 	for x in range(10):
 		ranges_np = np.zeros(num_ranges, dtype=np.float32)
-		queries_np = np.random.random((num_ranges, 3)).astype(np.float32)
-		queries_np[:,0] *= (testMap.width() - 2.0)
-		queries_np[:,1] *= (testMap.height() - 2.0)
-		queries_np[:,0] += 1.0
-		queries_np[:,1] += 1.0
-		queries_np[:,2] *= 2.0 * np.pi
-	
-		# Conversions so that calc_range() is equivalent to calc_range_many()
-		# See RangeLib.h RangeMethod::numpy_calc_range(), which is called by 
-		# calc_range_many())
-		if range_libc.USE_ROS_WORLD_TO_GRID_CONVERSION:
-			queries_slow = np.zeros(queries_np.shape)
-			queries_slow[:,0] = queries_np[:,1]
-			queries_slow[:,1] = queries_np[:,0]
-			queries_slow[:,2] = -queries_np[:,2] - (3.0 * np.pi / 2.0)
-		else:
-			queries_slow = np.copy(queries_np)
+		queries = np.random.random((num_ranges, 3)).astype(np.float32)
+		queries[:,0] *= (testMap.width() - 2.0)
+		queries[:,1] *= (testMap.height() - 2.0)
+		queries[:,0] += 1.0
+		queries[:,1] += 1.0
+		queries[:,2] *= 2.0 * np.pi
 
 		def scan(obj, name):
 			print("Running " + name + ":")
 			print("--------------------")
 			
 			start = time.process_time()
-			obj.calc_range_many(queries_np, ranges_np)
+			obj.calc_range_many(queries, ranges_np)
 			end = time.process_time()
 			dur_np = end - start
 			print("Numpy: Computed", num_ranges, "ranges in", dur_np, "sec")
 
 			start = time.process_time()
-			ranges_slow = np.array([obj.calc_range(*q) for q in queries_slow],
+			ranges_slow = np.array([obj.calc_range(*q) for q in queries],
 		                       	   dtype=np.float32)
 			end = time.process_time()
 			dur_slow = end - start
@@ -134,15 +112,12 @@ def random_scan(num_ranges):
 				      "investigation possibly required")
 			else:
 			    print("Test passed")
-			print("")	
-
-			if range_libc.MAKE_TRACE_MAP and (name == "bl" or name == "rm") and x == 0:
-				obj.saveTrace(str("./" + name + "_trace.png").encode('utf8'))		
+			print("")
 
 		scan(bl, "bl")
 		scan(rm, "rm")
 		scan(cddt, "cddt")
 		scan(glt, "glt")
 
-#fixed_scan(num_ranges=100)
+fixed_scan(num_ranges=100)
 random_scan(num_ranges=100000)

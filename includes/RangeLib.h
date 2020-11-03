@@ -433,14 +433,56 @@ namespace ranges {
 		RangeMethod(OMap m, float mr) : map(m), max_range(mr) {};
 		virtual ~RangeMethod() {};
 
-		virtual float calc_range(float x, float y, float heading) = 0;
-		virtual std::pair<float,float> calc_range_pair(float x, float y, float heading) { return std::make_pair(-1,-1); }
+		virtual float calc_range_unconverted(float x, float y, float heading) = 0;
+		virtual std::pair<float,float> calc_range_pair_unconverted(float x, float y, float heading) { return std::make_pair(-1,-1); }
 		virtual OMap *getMap() {return &map; }
 		virtual void report() {};
 		float maxRange() { return max_range; }
 		float memory() { return -1; }
 		
-		
+		float ANIL calc_range(float x, float y, float heading) {
+			#if ROS_WORLD_TO_GRID_CONVERSION == 1
+			float inv_world_scale = 1.0 / map.world_scale; 
+			float rotation_const = -1.0 * map.world_angle - 3.0*M_PI / 2.0;
+			float temp;
+
+			x = (x - map.world_origin_x) * inv_world_scale;
+			y = (y - map.world_origin_y) * inv_world_scale;
+			temp = x;
+			x = map.world_cos_angle*x - map.world_sin_angle*y;
+			y = map.world_sin_angle*temp + map.world_cos_angle*y;
+			temp = x;
+			x = y;
+			y = temp;
+			heading = -heading + rotation_const;
+			#endif
+
+			return calc_range_unconverted(x, y, heading) * map.world_scale;
+		}
+
+		std::pair<float, float> calc_range_pair(float x, float y, float heading) {			
+			#if ROS_WORLD_TO_GRID_CONVERSION == 1
+			float inv_world_scale = 1.0 / map.world_scale; 
+			float rotation_const = -1.0 * map.world_angle - 3.0*M_PI / 2.0;
+			float temp;
+
+			x = (x - map.world_origin_x) * inv_world_scale;
+			y = (y - map.world_origin_y) * inv_world_scale;
+			temp = x;
+			x = map.world_cos_angle*x - map.world_sin_angle*y;
+			y = map.world_sin_angle*temp + map.world_cos_angle*y;
+			temp = x;
+			x = y;
+			y = temp;
+			heading = -heading + rotation_const;
+			#endif
+
+			std::pair<float, float> ranges = calc_range_pair_unconverted(x, y, heading);
+			ranges.first *= map.world_scale;
+			ranges.second *= map.world_scale;
+			return ranges;
+		}
+
 		void saveTrace(std::string fn) { 
 			#if _MAKE_TRACE_MAP == 1
 			map.saveTrace(fn);
@@ -449,97 +491,21 @@ namespace ranges {
 			#endif
 		}
 		
-
 		// wrapper function to call calc_range repeatedly with the given array of inputs
 		// and store the result to the given outputs. Useful for avoiding cython function
 		// call overhead by passing it a numpy array pointer. Indexing assumes a 3xn numpy array
 		// for the inputs and a 1xn numpy array of the outputs
 		void numpy_calc_range(float * ins, float * outs, int num_casts) {
-			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			// cache these constants on the stack for efficiency
-			float inv_world_scale = 1.0 / map.world_scale; 
-			float world_scale = map.world_scale; 
-			float world_angle = map.world_angle;
-			float world_origin_x = map.world_origin_x;
-			float world_origin_y = map.world_origin_y;
-			float world_sin_angle = map.world_sin_angle;
-			float world_cos_angle = map.world_cos_angle;
-
-			float rotation_const = -1.0 * world_angle - 3.0*M_PI / 2.0;
-
-			// avoid allocation on every loop iteration
-			float x_world;
-			float y_world;
-			float theta_world;
-			float x;
-			float y;
-			float temp;
-			float theta;
-			#endif
-
 			for (int i = 0; i < num_casts; ++i) {
-				#if ROS_WORLD_TO_GRID_CONVERSION == 1
-				x_world = ins[i*3];
-				y_world = ins[i*3+1];
-				theta_world = ins[i*3+2];
-
-				x = (x_world - world_origin_x) * inv_world_scale;
-				y = (y_world - world_origin_y) * inv_world_scale;
-				temp = x;
-				x = world_cos_angle*x - world_sin_angle*y;
-				y = world_sin_angle*temp + world_cos_angle*y;
-				theta = -theta_world + rotation_const;
-
-				outs[i] = calc_range(y, x, theta) * world_scale;
-				#else
 				outs[i] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2]);
-				#endif
 			}
 		}
 
 		void numpy_calc_range_angles(float * ins, float * angles, float * outs, int num_particles, int num_angles) {
-			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			// cache these constants on the stack for efficiency
-			float inv_world_scale = 1.0 / map.world_scale; 
-			float world_scale = map.world_scale; 
-			float world_angle = map.world_angle;
-			float world_origin_x = map.world_origin_x;
-			float world_origin_y = map.world_origin_y;
-			float world_sin_angle = map.world_sin_angle;
-			float world_cos_angle = map.world_cos_angle;
-			float rotation_const = -1.0 * world_angle - 3.0*M_PI / 2.0;
-
-			// avoid allocation on every loop iteration
-			float x_world;
-			float y_world;
-			float theta_world;
-			float x;
-			float y;
-			float temp;
-			float theta;
-			#endif
-
-			for (int i = 0; i < num_particles; ++i)
-			{
-				#if ROS_WORLD_TO_GRID_CONVERSION == 1
-				x_world = ins[i*3];
-				y_world = ins[i*3+1];
-				theta_world = ins[i*3+2];
-				theta = -theta_world + rotation_const;
-
-				x = (x_world - world_origin_x) * inv_world_scale;
-				y = (y_world - world_origin_y) * inv_world_scale;
-				temp = x;
-				x = world_cos_angle*x - world_sin_angle*y;
-				y = world_sin_angle*temp + world_cos_angle*y;
-				#endif
-
-				for (int a = 0; a < num_angles; ++a)
-					#if ROS_WORLD_TO_GRID_CONVERSION == 1
-					outs[i*num_angles+a] = calc_range(y, x, theta - angles[a]) * world_scale;
-					#else
+			for (int i = 0; i < num_particles; ++i) {
+				for (int a = 0; a < num_angles; ++a) {
 				    outs[i*num_angles+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]);
-					#endif
+				}
 			}
 		}
 
@@ -549,17 +515,16 @@ namespace ranges {
 			for (int i = 0; i < table_width; ++i)
 			{
 				std::vector<double> table_row;
-				for (int j = 0; j < table_width; ++j)
+				for (int j = 0; j < table_width; ++j) {
 					table_row.push_back(table[table_width*i + j]);
+				}
 				sensor_model.push_back(table_row);
 			}
 		}
-		void eval_sensor_model(float * obs, float * ranges, double * outs, int rays_per_particle, int particles) {
-			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			float inv_world_scale = 1.0 / map.world_scale;
-			#endif
 
+		void eval_sensor_model(float * obs, float * ranges, double * outs, int rays_per_particle, int particles) {
 			// do no allocations in the main loop
+			float inv_world_scale = 1.0 / map.world_scale;
 			double weight;
 			float r;
 			float d;
@@ -571,14 +536,8 @@ namespace ranges {
 				weight = 1.0;
 				for (j = 0; j < rays_per_particle; ++j)
 				{
-					#if ROS_WORLD_TO_GRID_CONVERSION == 1
 					r = obs[j] * inv_world_scale;
 					d = ranges[i*rays_per_particle+j] * inv_world_scale;
-					#else
-					r = obs[j];
-					d = ranges[i*rays_per_particle+j];
-					#endif
-
 					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
 					d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
 					weight *= sensor_model[(int)r][(int)d];
@@ -589,28 +548,8 @@ namespace ranges {
 
 		// calc range for each pose, adding every angle, evaluating the sensor model
 		void calc_range_repeat_angles_eval_sensor_model(float * ins, float * angles, float * obs, double * weights, int num_particles, int num_angles) {
-			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			// cache these constants on the stack for efficiency
-			float inv_world_scale = 1.0 / map.world_scale; 
-			float world_scale = map.world_scale; 
-			float world_angle = map.world_angle;
-			float world_origin_x = map.world_origin_x;
-			float world_origin_y = map.world_origin_y;
-			float world_sin_angle = map.world_sin_angle;
-			float world_cos_angle = map.world_cos_angle;
-			float rotation_const = -1.0 * world_angle - 3.0*M_PI / 2.0;
-
-			// avoid allocation on every loop iteration
-			float x_world;
-			float y_world;
-			float theta_world;
-			float x;
-			float y;
-			float temp;
-			float theta;
-			#endif
-
 			// do no allocations in the main loop
+			float inv_world_scale = 1.0 / map.world_scale; 
 			double weight;
 			float r;
 			float d;
@@ -619,32 +558,13 @@ namespace ranges {
 
 			for (i = 0; i < num_particles; ++i)
 			{
-				#if ROS_WORLD_TO_GRID_CONVERSION == 1
-				x_world = ins[i*3];
-				y_world = ins[i*3+1];
-				theta_world = ins[i*3+2];
-				theta = -theta_world + rotation_const;
-
-				x = (x_world - world_origin_x) * inv_world_scale;
-				y = (y_world - world_origin_y) * inv_world_scale;
-				temp = x;
-				x = world_cos_angle*x - world_sin_angle*y;
-				y = world_sin_angle*temp + world_cos_angle*y;
-				#endif
-
 				weight = 1.0;
 				for (a = 0; a < num_angles; ++a)
 				{
-					#if ROS_WORLD_TO_GRID_CONVERSION == 1
-					d = calc_range(y, x, theta - angles[a]);
 					r = obs[a] * inv_world_scale;
-					#else
-					d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]);
-					r = obs[a];
-					#endif
-
+					d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]) * inv_world_scale;
+					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);					
 					d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
-					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
 					weight *= sensor_model[(int)r][(int)d];
 				}
 				weights[i] = weight;
@@ -654,29 +574,14 @@ namespace ranges {
 		// this is to compute a lidar sensor model using radial (calc_range_pair) optimizations
 		// this is only exact for a certain set of downsample amounts
 		void calc_range_many_radial_optimized(float * ins, float * outs, int num_particles, int num_rays, float min_angle, float max_angle) {
-			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			// cache these constants on the stack for efficiency
-			float inv_world_scale = 1.0 / map.world_scale; 
-			float world_scale = map.world_scale; 
-			float world_angle = map.world_angle;
-			float world_origin_x = map.world_origin_x;
-			float world_origin_y = map.world_origin_y;
-			float world_sin_angle = map.world_sin_angle;
-			float world_cos_angle = map.world_cos_angle;
-			float rotation_const = -1.0 * world_angle - 3.0*M_PI / 2.0;
-
-			// avoid allocation on every loop iteration
-			float x_world, y_world, theta_world, x, y, temp, theta = 0.0;
-			#endif
-
 			// do no allocations in the main loop
+			float inv_world_scale = 1.0 / map.world_scale; 
+
 			int i, a = 0;
-
-
+			
 			float step = (max_angle - min_angle) / (num_rays - 1);
 			float angle = min_angle;
-
-
+			
 			int max_pairwise_index = (float)num_rays / 3.0;
 			float index_offset_float = (num_rays - 1.0) * M_PI / (max_angle - min_angle);
 
@@ -688,40 +593,17 @@ namespace ranges {
 
 			for (i = 0; i < num_particles; ++i)
 			{
-				#if ROS_WORLD_TO_GRID_CONVERSION == 1
-				x_world = ins[i*3];
-				y_world = ins[i*3+1];
-				theta_world = ins[i*3+2];
-				theta = -theta_world + rotation_const;
-
-				x = (x_world - world_origin_x) * inv_world_scale;
-				y = (y_world - world_origin_y) * inv_world_scale;
-				temp = x;
-				x = world_cos_angle*x - world_sin_angle*y;
-				y = world_sin_angle*temp + world_cos_angle*y;
-				#endif
-
 				angle = min_angle;
 				for (a = 0; a <= max_pairwise_index; ++a) {
-					#if ROS_WORLD_TO_GRID_CONVERSION == 1
-					std::tie(r, r_inv) = calc_range_pair(y,x,theta - angle);
-					outs[i*num_rays+a] = r * world_scale;
-					outs[i*num_rays+a+index_offset] = r_inv * world_scale;
-					#else
 					std::tie(r, r_inv) = calc_range_pair(ins[i*3], ins[i*3+1], ins[i*3+2] - angle);
 					outs[i*num_rays+a] = r;
 					outs[i*num_rays+a+index_offset] = r_inv;
-					#endif
 					angle += step;
 				}
 
 				for (a = max_pairwise_index + 1; a < index_offset; ++a) {
-					#if ROS_WORLD_TO_GRID_CONVERSION == 1
-					outs[i*num_rays+a] = calc_range(y,x,theta - angle) * world_scale;
-					#else
 					outs[i*num_rays+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angle);
 					angle += step;
-					#endif
 				}
 			}
 			return;
@@ -743,7 +625,7 @@ namespace ranges {
 	public:
 		BresenhamsLine(OMap m, float mr) : RangeMethod(m, mr) {};
 		
-		float ANIL calc_range(float x, float y, float heading) {
+		float ANIL calc_range_unconverted(float x, float y, float heading) {
 			// first check if the cell underneath the query point is occupied, if so return
 			if (map.isOccupied((int)x,(int)y)) {
 				return 0.0;
@@ -829,11 +711,6 @@ namespace ranges {
 			#if USE_CUDA == 1
 			rmc = new RayMarchingCUDA(distImage->grid, distImage->width, distImage->height, max_range);
 
-			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			rmc->set_conversion_params(m.world_scale,m.world_angle,m.world_origin_x, m.world_origin_y, 
-				m.world_sin_angle, m.world_cos_angle);
-			#endif
-
 			#else
 			throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");
 			#endif
@@ -847,9 +724,9 @@ namespace ranges {
 			#endif
 		};
 
-		float calc_range(float x, float y, float heading) {
+		float calc_range_unconverted(float x, float y, float heading) {
 			#if USE_CUDA == 1
-			std::cout << "Do not call calc_range on RayMarchingGPU, requires batched queries" << std::endl;
+			std::cout << "Do not call calc_range_unconverted on RayMarchingGPU, requires batched queries" << std::endl;
 			return -1.0;
 			#else
 			throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");
@@ -974,7 +851,7 @@ namespace ranges {
 	public:
 		RayMarching(OMap m, float mr) : RangeMethod(m, mr) { distImage = DistanceTransform(&m); }
 		
-		float ANIL calc_range(float x, float y, float heading) {
+		float ANIL calc_range_unconverted(float x, float y, float heading) {
 			float x0 = x;
 			float y0 = y;
 
@@ -1389,7 +1266,7 @@ namespace ranges {
 			return std::make_tuple(binned, discrete_angle, is_flipped);
 		}
 
-		float ANIL calc_range(float x, float y, float heading) {
+		float ANIL calc_range_unconverted(float x, float y, float heading) {
 			#if _USE_LRU_CACHE
 			int theta_key = (int) roundf(heading * theta_discretization_div_M_2PI);
 			// int theta_key = angle_index;
@@ -1568,7 +1445,7 @@ namespace ranges {
 		// returns both range for the given heading, and heading + pi/2
 		// it is efficient to do both at the same time, rather than both
 		// independently if they are both required
-		std::pair<float,float> calc_range_pair(float x, float y, float heading) {
+		std::pair<float,float> calc_range_pair_unconverted(float x, float y, float heading) {
 			int angle_index;
 			float discrete_theta;
 			bool is_flipped;
@@ -1916,7 +1793,7 @@ namespace ranges {
 			return binned;
 		}
 
-		float ANIL calc_range(float x, float y, float heading) {
+		float ANIL calc_range_unconverted(float x, float y, float heading) {
 			if (x < 0 || x >= map.width || y < 0 || y >= map.height) return max_range;
 			#if _GIANT_LUT_SHORT_DATATYPE
 				#if _USE_CACHED_CONSTANTS
