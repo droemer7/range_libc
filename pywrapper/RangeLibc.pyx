@@ -344,3 +344,4 @@ cdef class PyNull:
         a = ins[0,0]
         b = outs[0]
         c = outs.shape[0]
+        

@@ -59,7 +59,7 @@ def locate_cuda():
     Starts by looking for the CUDAHOME env variable. If not found, everything
     is based on finding 'nvcc' in the PATH.
     """
-    # print os.environ
+    # print(os.environ)
     # first check if the CUDAHOME env variable is in use
     if os.path.isdir("/usr/local/cuda-7.5"):
         home = "/usr/local/cuda-7.5"
