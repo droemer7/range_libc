@@ -719,8 +719,6 @@ namespace ranges {
 			delete distImage;
 			#if USE_CUDA == 1
 			delete rmc;
-			#else
-			throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");
 			#endif
 		};
 
