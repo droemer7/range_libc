@@ -10,3 +10,6 @@ paper/data/synthetic
 ._.*
 paper/bak
 pywrapper/watch.sh
+
+# VS Code
+.vscode
