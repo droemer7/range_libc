@@ -16,7 +16,7 @@
 
 /*
 Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8c04017f2/libs/slam/include/mrpt/slam/PF_implementations.h
-	
+
 	- collision avoidance http://users.isy.liu.se/en/rt/fredrik/reports/01SPpf4pos.pdf
 	- σMCL http://www.roboticsproceedings.org/rss01/p49.pdf
 	- nifty heuristic to figure out when localization is lost
@@ -50,7 +50,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #include <cassert>
 #include <tuple>
 
-#ifndef _MAKE_TRACE_MAP 
+#ifndef _MAKE_TRACE_MAP
 	#define _MAKE_TRACE_MAP 0
 #endif
 
@@ -78,13 +78,13 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #define ROS_WORLD_TO_GRID_CONVERSION 1
 #define SENSOR_MODEL_HELPERS 1
 
-// slow unoptimized version 
+// slow unoptimized version
 // #define _USE_ALTERNATE_MOD 0
 // #define _USE_CACHED_CONSTANTS 1
 // #define _USE_FAST_ROUND 1
 // #define _DO_MOD 0 // this might not be necessary (aka 1 & 0 might be equivalent), will evaluate later
 // #define _NO_INLINE 0
-// 
+//
 #if _USE_LRU_CACHE
 #include "includes/lru_cache.h"
 #endif
@@ -93,7 +93,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #if _NO_INLINE == 1
 #define ANIL __attribute__ ((noinline))
 #else
-#define ANIL 
+#define ANIL
 #endif
 
 // these defines are for yaml/JSON serialization
@@ -108,7 +108,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #define J4 J2 J2
 
 #if USE_CUDA == 1
-	#ifndef CHUNK_SIZE 
+	#ifndef CHUNK_SIZE
 	#define CHUNK_SIZE 262144
 	#define CHUNK_THREADS 256
 	#endif
@@ -131,15 +131,15 @@ namespace ranges {
 		#endif
 
 		// this stuff is for ROS integration, not necessary for raw usage
-		float world_scale; 
+		float world_scale;
 		float world_angle;
 		float world_origin_x;
 		float world_origin_y;
 		float world_sin_angle;
 		float world_cos_angle;
 
-		OMap(int w, int h) : 
-		    width(w), 
+		OMap(int w, int h) :
+		    width(w),
 			height(h),
             world_scale(1.0),
 		    world_angle(0.0),
@@ -147,8 +147,8 @@ namespace ranges {
 		    world_origin_y(0.0),
 		    world_sin_angle(0.0),
 		    world_cos_angle(1.0),
-			fn(""), 
-			has_error(false) 
+			fn(""),
+			has_error(false)
 	    {
 			for (int i = 0; i < w; ++i) {
 				std::vector<bool> y_axis;
@@ -165,15 +165,15 @@ namespace ranges {
 		}
 
 		OMap(std::string filename) : OMap(filename, 128) {}
-		OMap(std::string filename, float threshold) : 
+		OMap(std::string filename, float threshold) :
 		    world_scale(1.0),
 		    world_angle(0.0),
 		    world_origin_x(0.0),
 		    world_origin_y(0.0),
 		    world_sin_angle(0.0),
 		    world_cos_angle(1.0),
-			fn(filename), 
-			has_error(false) 
+			fn(filename),
+			has_error(false)
 		{
 			unsigned error;
 			unsigned char* image;
@@ -219,12 +219,12 @@ namespace ranges {
 		}
 
 		bool get(int x, int y) { return grid[x][y]; }
-		bool isOccupied(int x, int y) { 
+		bool isOccupied(int x, int y) {
 			if (x < 0 || x >= width || y < 0 || y >= height) return false;
 			#if _MAKE_TRACE_MAP == 1
 			trace_grid[x][y] = true;
 			#endif
-			return grid[x][y]; 
+			return grid[x][y];
 		}
 
 		// query the grid without a trace
@@ -246,7 +246,7 @@ namespace ranges {
 					// 	image[idx + 1] = 255;
 					// 	image[idx + 2] = 255;
 					// }
-					
+
 					image[idx + 2] = 255;
 					image[idx + 1] = 255;
 					image[idx + 0] = 255;
@@ -288,7 +288,7 @@ namespace ranges {
 			for (int y = 0; y < height; ++y) {
 				for (int x = 0; x < width; ++x) {
 					unsigned idx = 4 * y * width + 4 * x;
-					
+
 					image[idx + 2] = (char)255;
 					image[idx + 1] = (char)255;
 					image[idx + 0] = (char)255;
@@ -372,7 +372,7 @@ namespace ranges {
 		        for (std::size_t j = 0; j < height; ++j)
 		        	if (map->isOccupied(i,j)) f[i][j] = 0.0f;
 		        	else f[i][j] = std::numeric_limits<float>::max();
-		    
+
 			dt::DistanceTransform::distanceTransformL2(f, f, indices, false);
 
 			// allocate space in the vectors
@@ -392,7 +392,7 @@ namespace ranges {
 
 		bool save(std::string filename) {
 			std::vector<unsigned char> png;
-			lodepng::State state; 
+			lodepng::State state;
 			char image[width * height * 4];
 
 			float scale = 0;
@@ -439,10 +439,10 @@ namespace ranges {
 		virtual void report() {};
 		float maxRange() { return max_range; }
 		float memory() { return -1; }
-		
+
 		float ANIL calc_range(float x, float y, float heading) {
 			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			float inv_world_scale = 1.0 / map.world_scale; 
+			float inv_world_scale = 1.0 / map.world_scale;
 			float rotation_const = -1.0 * map.world_angle - 3.0*M_PI / 2.0;
 			float temp;
 
@@ -460,9 +460,9 @@ namespace ranges {
 			return calc_range_unconverted(x, y, heading) * map.world_scale;
 		}
 
-		std::pair<float, float> calc_range_pair(float x, float y, float heading) {			
+		std::pair<float, float> calc_range_pair(float x, float y, float heading) {
 			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			float inv_world_scale = 1.0 / map.world_scale; 
+			float inv_world_scale = 1.0 / map.world_scale;
 			float rotation_const = -1.0 * map.world_angle - 3.0*M_PI / 2.0;
 			float temp;
 
@@ -483,14 +483,14 @@ namespace ranges {
 			return ranges;
 		}
 
-		void saveTrace(std::string fn) { 
+		void saveTrace(std::string fn) {
 			#if _MAKE_TRACE_MAP == 1
 			map.saveTrace(fn);
 			#else
 			std::cout << "WARNING: trace map not generated, must compile with trace support enabled." << std::endl;
 			#endif
 		}
-		
+
 		// wrapper function to call calc_range repeatedly with the given array of inputs
 		// and store the result to the given outputs. Useful for avoiding cython function
 		// call overhead by passing it a numpy array pointer. Indexing assumes a 3xn numpy array
@@ -549,7 +549,7 @@ namespace ranges {
 		// calc range for each pose, adding every angle, evaluating the sensor model
 		void calc_range_repeat_angles_eval_sensor_model(float * ins, float * angles, float * obs, double * weights, int num_particles, int num_angles) {
 			// do no allocations in the main loop
-			float inv_world_scale = 1.0 / map.world_scale; 
+			float inv_world_scale = 1.0 / map.world_scale;
 			double weight;
 			float r;
 			float d;
@@ -563,7 +563,7 @@ namespace ranges {
 				{
 					r = obs[a] * inv_world_scale;
 					d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]) * inv_world_scale;
-					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);					
+					r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
 					d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
 					weight *= sensor_model[(int)r][(int)d];
 				}
@@ -575,13 +575,13 @@ namespace ranges {
 		// this is only exact for a certain set of downsample amounts
 		void calc_range_many_radial_optimized(float * ins, float * outs, int num_particles, int num_rays, float min_angle, float max_angle) {
 			// do no allocations in the main loop
-			float inv_world_scale = 1.0 / map.world_scale; 
+			float inv_world_scale = 1.0 / map.world_scale;
 
 			int i, a = 0;
-			
+
 			float step = (max_angle - min_angle) / (num_rays - 1);
 			float angle = min_angle;
-			
+
 			int max_pairwise_index = (float)num_rays / 3.0;
 			float index_offset_float = (num_rays - 1.0) * M_PI / (max_angle - min_angle);
 
@@ -610,7 +610,7 @@ namespace ranges {
 		}
 
 		#endif // SENSOR_MODEL_HELPERS
-	
+
 	protected:
 		OMap map;
 		float max_range;
@@ -624,7 +624,7 @@ namespace ranges {
 	{
 	public:
 		BresenhamsLine(OMap m, float mr) : RangeMethod(m, mr) {};
-		
+
 		float ANIL calc_range_unconverted(float x, float y, float heading) {
 			// first check if the cell underneath the query point is occupied, if so return
 			if (map.isOccupied((int)x,(int)y)) {
@@ -632,7 +632,7 @@ namespace ranges {
 			}
 
 			/*
-			 this defines the coordinate system such that 
+			 this defines the coordinate system such that
 			    ------> +x
 			    |
 			    |
@@ -697,7 +697,7 @@ namespace ranges {
 					}
 				}
 			}
-			return max_range; 
+			return max_range;
 		}
 
 		int memory() { return map.memory(); }
@@ -706,7 +706,7 @@ namespace ranges {
 	class RayMarchingGPU : public RangeMethod
 	{
 	public:
-		RayMarchingGPU(OMap m, float mr) : RangeMethod(m, mr) { 
+		RayMarchingGPU(OMap m, float mr) : RangeMethod(m, mr) {
 			distImage = new DistanceTransform(&m);
 			#if USE_CUDA == 1
 			rmc = new RayMarchingCUDA(distImage->grid, distImage->width, distImage->height, max_range);
@@ -785,7 +785,7 @@ namespace ranges {
 			std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
 			return;
 			#endif
-			
+
 			int particles_per_iter = std::ceil((float)CHUNK_SIZE / (float)num_angles);
 			int iters = std::ceil((float)num_particles / (float) particles_per_iter);
 			// must allways do the correct number of angles, can only split on the particles
@@ -822,7 +822,7 @@ namespace ranges {
 			std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
 			return;
 			#endif
-			
+
 			int particles_per_iter = std::ceil((float)CHUNK_SIZE / (float)num_angles);
 			int iters = std::ceil((float)num_particles / (float) particles_per_iter);
 			// must allways do the correct number of angles, can only split on the particles
@@ -836,7 +836,7 @@ namespace ranges {
 			#endif
 		}
 		#endif
-	
+
 		int memory() { return distImage->memory(); }
 	protected:
 		DistanceTransform *distImage = 0;
@@ -850,7 +850,7 @@ namespace ranges {
 	{
 	public:
 		RayMarching(OMap m, float mr) : RangeMethod(m, mr) { distImage = DistanceTransform(&m); }
-		
+
 		float ANIL calc_range_unconverted(float x, float y, float heading) {
 			float x0 = x;
 			float y0 = y;
@@ -871,7 +871,7 @@ namespace ranges {
 				}
 
 				float d = distImage.get(px, py);
-				
+
 				#if _MAKE_TRACE_MAP == 1
 				map.isOccupied(px,py); // this makes a dot appear in the trace map
 				#endif
@@ -885,7 +885,7 @@ namespace ranges {
 				t += std::max<float>(d * step_coeff, 1.0);
 			}
 
-			return max_range; 
+			return max_range;
 		}
 
 		int memory() { return distImage.memory(); }
@@ -898,7 +898,7 @@ namespace ranges {
 	class CDDTCast : public RangeMethod
 	{
 	public:
-		CDDTCast(OMap m, float mr, unsigned int td) :  RangeMethod(m, mr), theta_discretization(td) { 
+		CDDTCast(OMap m, float mr, unsigned int td) :  RangeMethod(m, mr), theta_discretization(td) {
 			#if _USE_CACHED_CONSTANTS
 			theta_discretization_div_M_2PI = theta_discretization / M_2PI;
 			M_2PI_div_theta_discretization = M_2PI / ((float) theta_discretization);
@@ -942,13 +942,13 @@ namespace ranges {
 				lut_widths.push_back(lut_width);
 
 				/* the entire map will be rotated by the given angle. Every pixel in t hat map must be
-				   projected into the LUT, so we need to make sure that the index of every pixel will be 
+				   projected into the LUT, so we need to make sure that the index of every pixel will be
 				   positive when projected into LUT space. For example, here's the example with no rotation
 
                     (0,height)  (width,height)      {
 						    *----------*    -----------> []
-						    |  a       |    -----------> [a] 
-						    |      b   |    -----------> [b] 
+						    |  a       |    -----------> [a]
+						    |      b   |    -----------> [b]
 						    |  c      d|    -----------> [c,d]
 						    *----------o    -----------> []
 						  (0,0)       (width,0)           }
@@ -957,8 +957,8 @@ namespace ranges {
 
 				   (-height,width) (0,width)      {
 					  	     *--------*    -----------> []
-					  	     |       d|    -----------> [d] 
-					  	     |   b    |    -----------> [b] 
+					  	     |       d|    -----------> [d]
+					  	     |   b    |    -----------> [b]
 					  	     |        |    -----------> []
 					  	     | a   c  |    -----------> [a,c]
 					  	     *--------o    -----------> []
@@ -968,7 +968,7 @@ namespace ranges {
 				   to ensure every LUT index is positive, we should translate the rotated map by:
 				   	         max(0, -1 * [minimum y coordinate for each corner])
 				*/
-				
+
 				// this is the y-coordinate for each non-origin corner
 				#if _USE_CACHED_TRIG == 1
 				float left_top_corner_y     = map.height * cosfangle;
@@ -979,7 +979,7 @@ namespace ranges {
 				float right_top_corner_y    = map.width * sinf(angle) + map.height * cosf(angle);
 				float right_bottom_corner_y = map.width * sinf(angle);
 				#endif
-				
+
 				// find the lowest corner, and determine the translation necessary to make them all positive
 				float min_corner_y = std::min(left_top_corner_y, std::min(right_top_corner_y, right_bottom_corner_y));
 				float lut_translation = std::max(0.0, -1.0 * min_corner_y - _EPSILON);
@@ -1038,7 +1038,7 @@ namespace ranges {
 							// 	lower_bin--;
 							// }
 
-							for (int i = lower_bin; i <= upper_bin; ++i) 
+							for (int i = lower_bin; i <= upper_bin; ++i)
 								compressed_lut[a][i].push_back(lut_space_center_x);
 
 							// std::cout << std::endl;
@@ -1130,7 +1130,7 @@ namespace ranges {
 				// float cosangle = cos_values[angle_index];
 				// float sinangle = sin_values[angle_index];
 				float translation = lut_translations[angle_index];
-				
+
 				float lut_space_x;
 				float lut_space_y;
 				unsigned int lut_index;
@@ -1343,7 +1343,7 @@ namespace ranges {
 					int index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin();
 					assert(index > 0); // if index is 0, this will segfault. that should never happen, though.
 					float val = lut_space_x - (*lut_bin)[index-1];
-					
+
 					#if _TRACK_COLLISION_INDEXES == 1
 					collision_table[angle_index][lut_index].insert(index);
 					#endif
@@ -1406,7 +1406,7 @@ namespace ranges {
 					// float val = *std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x);
 					int index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin();
 					float val = (*lut_bin)[index] - lut_space_x;
-					
+
 					#if _TRACK_COLLISION_INDEXES == 1
 					collision_table[angle_index][lut_index].insert(index);
 					#endif
@@ -1475,10 +1475,10 @@ namespace ranges {
 				// there are no entries in this lut bin
 				if (high == -1) return std::make_pair(max_range, max_range);
 				// the furthest entry is behind the query point and out of max range of the inverse query
-				// if ((*lut_bin)[low] - max_range > lut_space_x) return std::make_pair(max_range, max_range);				
-				if ((*lut_bin)[low] > lut_space_x) 
+				// if ((*lut_bin)[low] - max_range > lut_space_x) return std::make_pair(max_range, max_range);
+				if ((*lut_bin)[low] > lut_space_x)
 					return std::make_pair(max_range, std::min(max_range, (*lut_bin)[low] - lut_space_x));
-				if ((*lut_bin)[high]< lut_space_x) 
+				if ((*lut_bin)[high]< lut_space_x)
 					return std::make_pair(lut_space_x - (*lut_bin)[high], max_range);
 				// the query point is on top of a occupied pixel
 				// this call is here rather than at the beginning, because it is apparently more efficient.
@@ -1511,7 +1511,7 @@ namespace ranges {
 
 					return std::make_pair(lut_space_x - val, max_range);
 				} else {
-					
+
 					#if _TRACK_COLLISION_INDEXES == 1
 					collision_table[angle_index][lut_index].insert(index);
 					collision_table[angle_index][lut_index].insert(inverse_index);
@@ -1529,7 +1529,7 @@ namespace ranges {
 				if (high == -1) return std::make_pair(max_range, max_range);
 				// the furthest entry is behind the query point
 				// if ((*lut_bin)[high] + max_range < lut_space_x) return std::make_pair(max_range, max_range);
-				if ((*lut_bin)[high] < lut_space_x) 
+				if ((*lut_bin)[high] < lut_space_x)
 					return std::make_pair(max_range, std::min(max_range, lut_space_x - (*lut_bin)[high]));
 				// TODO might need another early return case here
 					// return std::make_pair(max_range, std::min(max_range, lut_space_x - (*lut_bin)[high]));
@@ -1609,7 +1609,7 @@ namespace ranges {
 
 				for (int j = 0; j < compressed_lut[i].size(); ++j) {
 					(*ss) << T4 << "- "; utils::serialize(compressed_lut[i][j], ss); (*ss) << std::endl;
-				}		
+				}
 			}
 		}
 
@@ -1627,10 +1627,10 @@ namespace ranges {
 				(*ss) << J2 << "\"path\": \"" << map.fn << "\"," << std::endl;
 				(*ss) << J2 << "\"width\": " << map.width << "," << std::endl;
 				(*ss) << J2 << "\"height\": " << map.height << "," << std::endl;
-				
+
 				(*ss) << J2 << "\"data\": [";// utils::serialize(map.grid[0], ss);
 				for (int i = 0; i < map.width; ++i) {
-					if (i > 0) (*ss) << ","; 
+					if (i > 0) (*ss) << ",";
 					utils::serialize(map.grid[i], ss);
 				}
 				(*ss) << "]," << std::endl;
@@ -1648,11 +1648,11 @@ namespace ranges {
 					(*ss) << J3 << "\"zeros\": [";
 
 					for (int j = 0; j < compressed_lut[i].size(); ++j) {
-						if (j > 0) (*ss) << ","; 
+						if (j > 0) (*ss) << ",";
 						utils::serialize(compressed_lut[i][j], ss);
 					}
 					(*ss) << "]" << std::endl;
-					if (i == compressed_lut.size() -1)	
+					if (i == compressed_lut.size() -1)
 						(*ss) << J2 << "}" << std::endl;
 					else
 						(*ss) << J2 << "}," << std::endl;
@@ -1663,7 +1663,7 @@ namespace ranges {
 
 		void report() {
 			#if _USE_LRU_CACHE
-			std::cout << "cache hits: " << hits << "  cache misses: " << misses << std::endl; 
+			std::cout << "cache hits: " << hits << "  cache misses: " << misses << std::endl;
 			#endif
 		}
 	// protected:
@@ -1673,7 +1673,7 @@ namespace ranges {
 		std::vector<std::vector<std::vector<float> > > compressed_lut;
 		// cached list of y translations necessary to project points into lut space
 		std::vector<float> lut_translations;
-		
+
 		#if _USE_CACHED_TRIG == 1
 		std::vector<float> cos_values;
 		std::vector<float> sin_values;
@@ -1705,7 +1705,7 @@ namespace ranges {
 		typedef float lut_t;
 		#endif
 
-		GiantLUTCast(OMap m, float mr, int td) : theta_discretization(td), RangeMethod(m, mr) { 
+		GiantLUTCast(OMap m, float mr, int td) : theta_discretization(td), RangeMethod(m, mr) {
 			#if _USE_CACHED_CONSTANTS
 			theta_discretization_div_M_2PI = theta_discretization / M_2PI;
 			M_2PI_div_theta_discretization = M_2PI / ((float) theta_discretization);
@@ -1829,14 +1829,14 @@ namespace ranges {
 		#endif
 		std::vector<std::vector<std::vector<lut_t> > > giant_lut;
 	};
-} 
+}
 
 namespace benchmark {
 	template <class range_T>
 	class Benchmark
 	{
 	public:
-		Benchmark(range_T rm) : range(rm) { 
+		Benchmark(range_T rm) : range(rm) {
 			map = range.getMap();
 		};
 		~Benchmark() {};
