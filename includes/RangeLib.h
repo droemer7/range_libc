@@ -28,9 +28,9 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #ifndef RANGE_LIB_H
 #define RANGE_LIB_H
 
-#include "../vendor/lodepng/lodepng.h"
-#include "../vendor/distance_transform.h"
-#include "RangeUtils.h"
+#include "vendor/lodepng/lodepng.h"
+#include "vendor/distance_transform.h"
+#include "includes/RangeUtils.h"
 
 #include <stdio.h>      /* printf */
 #include <cstdlib>
