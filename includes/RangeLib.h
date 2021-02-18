@@ -228,7 +228,7 @@ namespace ranges {
 		}
 
 		// query the grid without a trace
-		bool isOccupiedNT(int x, int y) { return grid[x][y]; }
+		bool isOccupiedNT(int x, int y) const { return grid[x][y]; }
 
 		#if _MAKE_TRACE_MAP == 1
 		bool saveTrace(std::string filename) {

@@ -13,7 +13,7 @@
 namespace utils {
 	static unsigned long x=123456789, y=362436069, z=521288629;
 
-	unsigned long xorshf96(void) {          //period 2^96-1
+	inline unsigned long xorshf96(void) {          //period 2^96-1
 		// return std::rand() / RAND_MAX;
 		unsigned long t;
 		x ^= x << 16;
@@ -27,13 +27,13 @@ namespace utils {
 
 		return z;
 	}
-	float rgb2gray(float r, float g, float b) {
+	inline float rgb2gray(float r, float g, float b) {
 		return 0.229 * r + 0.587 * g + 0.114 * b;
 	}
-	int randrange(int min, int max) {
+	inline int randrange(int min, int max) {
 		return min + (rand() % (int)(max - min + 1));
 	}
-	std::vector<std::pair<int,int> > outline(int x, int y, bool use_corners) {
+	inline std::vector<std::pair<int,int> > outline(int x, int y, bool use_corners) {
 		std::vector<std::pair<int,int> > corners;
 
 		corners.push_back(std::make_pair(x+1,y));
@@ -84,15 +84,15 @@ namespace utils {
 		key_T t_mask;
 	};
 
-	bool has(std::string substring, std::string str) {
+	inline bool has(std::string substring, std::string str) {
 		return str.find(substring) != std::string::npos;
 	}
 
-	bool has(std::string val, std::vector<std::string> vstr) {
+	inline bool has(std::string val, std::vector<std::string> vstr) {
 		return std::find(vstr.begin(), vstr.end(),val)!=vstr.end();
 	}
 
-	std::vector<std::string> split(std::string in, char delim) {
+	inline std::vector<std::string> split(std::string in, char delim) {
 		std::vector<std::string> result;
 		std::stringstream ss(in);
 		while( ss.good() )
@@ -104,7 +104,7 @@ namespace utils {
 		return result;
 	}
 
-	double norminv(double q) {
+	inline double norminv(double q) {
 		if(q == .5)
 			return 0;
 
@@ -207,10 +207,10 @@ namespace utils {
 		float cache[10000];
 	};
 
-	void serialize(std::vector<bool> &vals,std::stringstream* ss) {
+	inline void serialize(std::vector<bool> &vals,std::stringstream* ss) {
 		if (vals.size() == 0) {
 			(*ss) << "[]";
-			return; 
+			return;
 		}
 		(*ss) << "[" << vals[0];
 		for (int i = 1; i < vals.size(); ++i) {
@@ -219,10 +219,10 @@ namespace utils {
 		(*ss) << "]";
 	}
 
-	void serialize(std::vector<float> &vals,std::stringstream* ss) {
+	inline void serialize(std::vector<float> &vals,std::stringstream* ss) {
 		if (vals.size() == 0) {
 			(*ss) << "[]";
-			return; 
+			return;
 		}
 		(*ss) << "[" << vals[0];
 		for (int i = 1; i < vals.size(); ++i) {
@@ -231,7 +231,7 @@ namespace utils {
 		(*ss) << "]";
 	}
 
-	std::string serialize(std::vector<float> &vals) {
+	inline std::string serialize(std::vector<float> &vals) {
 		std::stringstream ss;
 		serialize(vals,&ss);
 		return ss.str();
