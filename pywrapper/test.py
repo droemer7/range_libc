@@ -25,35 +25,41 @@ import itertools, time
 # print(range_libc.USE_LRU_CACHE)
 # print(range_libc.LRU_CACHE_SIZE)
 
-# testMap = range_libc.PyOMap("../maps/basement_hallways_5cm.png".encode('utf8'),1)
-testMap = range_libc.PyOMap("../maps/test.png".encode('utf8'),1)
-# testMap = range_libc.PyOMap("/home/racecar/racecar-ws/src/TA_examples/lab5/maps/basement.png".encode('utf8'),1)
+testMapFileName = "../maps/test_medium.png".encode('utf8')
+testMap = range_libc.PyOMap(testMapFileName, 1)
 
 if testMap.error():
   exit()
-# testMap.save("./loaded_map.png".encode('utf-8'))
 
-print("Initializing: bl")
-bl = range_libc.PyBresenhamsLine(testMap, 500)
-print("Initializing: rm")
-rm = range_libc.PyRayMarching(testMap, 500)
-print("Initializing: cddt")
-cddt = range_libc.PyCDDTCast(testMap, 500, 108)
+max_range = 30
+theta_discretization = 1000
+print("Initializing: bl (max range = {0})".format(max_range))
+bl = range_libc.PyBresenhamsLine(testMap, max_range)
+print("Initializing: rm (max range = {0})".format(max_range))
+rm = range_libc.PyRayMarching(testMap, max_range)
+print("Initializing: cddt (max range = {0}, theta_discretization = {1})".
+      format(max_range, theta_discretization)
+     )
+cddt = range_libc.PyCDDTCast(testMap, max_range, theta_discretization)
 cddt.prune()
-print("Initializing: glt")
-glt = range_libc.PyGiantLUTCast(testMap, 500, 108)
-print("")
+print("Initializing: glt (max range = {0}, theta_discretization = {1})".
+      format(max_range, theta_discretization)
+     )
+glt = range_libc.PyGiantLUTCast(testMap, max_range, theta_discretization)
+print()
 
 # For testing / debugging
 def fixed_scan(num_ranges, print_sample=True):
   ranges_np = np.zeros(num_ranges, dtype=np.float32)
   queries = np.zeros((num_ranges, 3), dtype=np.float32)
-  queries[:,0] = testMap.width() / 2.0
-  queries[:,1] = testMap.height() / 2.0
+  queries[:,0] = int(testMap.width() / 2.0)
+  queries[:,1] = int(testMap.height() / 2.0)
   queries[:,2] = np.linspace(0, 2.0 * np.pi, num_ranges)
   queries_deg = np.copy(queries)
   queries_deg[:,2] *= 180.0 / np.pi
-  print("Points (x, y, th): \n", queries_deg)
+  print("Test points (x, y, th (degrees)):")
+  print("--------------------")
+  print(queries_deg)
   print()
 
   if print_sample:
@@ -70,7 +76,7 @@ def fixed_scan(num_ranges, print_sample=True):
       print("Numpy sample:", [ranges_np[int(s)] for s in sample])
       print("Slow sample: ", [ranges_slow[int(s)] for s in sample])
     print("Diff:", np.linalg.norm(ranges_np - ranges_slow))
-    print("")
+    print()
 
     if range_libc.MAKE_TRACE_MAP and (name == "bl" or name == "rm"):
       obj.saveTrace(str("./" + name + "_trace.png").encode('utf8'))
@@ -116,7 +122,7 @@ def random_scan(num_ranges):
               "investigation possibly required")
       else:
           print("Test passed")
-      print("")
+      print()
 
     scan(bl, "bl")
     scan(rm, "rm")
