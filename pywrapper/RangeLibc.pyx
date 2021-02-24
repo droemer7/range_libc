@@ -49,12 +49,12 @@ cdef extern from "includes/RangeLib.h" namespace "ranges":
         bool get(int x, int y)
 
         # constants for coordinate space conversion
-        float world_scale 
-        float world_angle
-        float world_origin_x
-        float world_origin_y
-        float world_sin_angle
-        float world_cos_angle
+        float x
+        float y
+        float th
+        float sin_th
+        float cos_th
+        float scale
 
     cdef cppclass BresenhamsLine:
         BresenhamsLine(OMap m, float mr)
@@ -116,7 +116,7 @@ PyOMap: wraps OMap class
             <string map_path>, <float>: loads map from png image at given path with given occupancy threshold
             <numpy.ndarray>           : loads map from given numpy boolean array
     methods:
-        bool save(string filename)    : saves the occupancy grid to given path in png format. 
+        bool save(string filename)    : saves the occupancy grid to given path in png format.
                                         white == free, black == occupied
         bool isOccupied(int x, int y) : returns true if the given pixel index is occupied, false otherwise
         bool error()                  : returns true if there was an error loading the map
@@ -161,12 +161,12 @@ cdef class PyOMap:
 
                 # cache constants for coordinate space conversion
                 angle = -1.0*quaternion_to_angle(map_msg.info.origin.orientation)
-                self.thisptr.world_scale = map_msg.info.resolution
-                self.thisptr.world_angle = angle
-                self.thisptr.world_origin_x = map_msg.info.origin.position.x
-                self.thisptr.world_origin_y = map_msg.info.origin.position.y
-                self.thisptr.world_sin_angle = np.sin(angle)
-                self.thisptr.world_cos_angle = np.cos(angle)
+                self.thisptr.x = map_msg.info.origin.position.x
+                self.thisptr.y = map_msg.info.origin.position.y
+                self.thisptr.th = angle
+                self.thisptr.sin_th = np.sin(angle)
+                self.thisptr.cos_th = np.cos(angle)
+                self.thisptr.scale = map_msg.info.resolution
             else:
                 self.thisptr = new OMap(arg1)
         else:
@@ -201,7 +201,7 @@ cdef class PyBresenhamsLine:
         return self.thisptr.calc_range(x, y, heading)
     cpdef void calc_range_many(self,np.ndarray[float, ndim=2, mode="c"] ins, np.ndarray[float, ndim=1, mode="c"] outs):
         self.thisptr.numpy_calc_range(&ins[0,0], &outs[0], outs.shape[0])
-    
+
     cpdef void calc_range_repeat_angles(self,np.ndarray[float, ndim=2, mode="c"] ins,np.ndarray[float, ndim=1, mode="c"] angles, np.ndarray[float, ndim=1, mode="c"] outs):
         self.thisptr.numpy_calc_range_angles(&ins[0,0], &angles[0], &outs[0], ins.shape[0], angles.shape[0])
 
@@ -264,14 +264,14 @@ cdef class PyCDDTCast:
 
     cpdef void calc_range_repeat_angles_eval_sensor_model(self,np.ndarray[float, ndim=2, mode="c"] ins,np.ndarray[float, ndim=1, mode="c"] angles, np.ndarray[float, ndim=1, mode="c"] obs, np.ndarray[double, ndim=1, mode="c"] weights):
         self.thisptr.calc_range_repeat_angles_eval_sensor_model(&ins[0,0], &angles[0], &obs[0],  &weights[0], ins.shape[0], angles.shape[0])
-    
+
     cpdef void calc_range_many_radial_optimized(self, int num_rays, float min_angle, float max_angle, np.ndarray[float, ndim=2, mode="c"] ins, np.ndarray[float, ndim=1, mode="c"] outs):
         # self.thisptr.calc_range_many_radial_optimized(num_rays, min_angle, max_angle, num_particles, &ins[0,0], &outs[0])
         self.thisptr.calc_range_many_radial_optimized(&ins[0,0], &outs[0], ins.shape[0], num_rays, min_angle, max_angle)
 
     cpdef void calc_range_repeat_angles(self,np.ndarray[float, ndim=2, mode="c"] ins,np.ndarray[float, ndim=1, mode="c"] angles, np.ndarray[float, ndim=1, mode="c"] outs):
         self.thisptr.numpy_calc_range_angles(&ins[0,0], &angles[0], &outs[0], ins.shape[0], angles.shape[0])
-    
+
     cpdef void eval_sensor_model(self, np.ndarray[float, ndim=1, mode="c"] observation, np.ndarray[float, ndim=1, mode="c"] ranges, np.ndarray[double, ndim=1, mode="c"] outs, int num_rays, int num_particles):
         self.thisptr.eval_sensor_model(&observation[0],&ranges[0], &outs[0], num_rays, num_particles)
     cpdef void set_sensor_model(self, np.ndarray[double, ndim=2, mode="c"] table):
@@ -290,7 +290,7 @@ cdef class PyGiantLUTCast:
         return self.thisptr.calc_range(x, y, heading)
     cpdef void calc_range_many(self,np.ndarray[float, ndim=2, mode="c"] ins, np.ndarray[float, ndim=1, mode="c"] outs):
         self.thisptr.numpy_calc_range(&ins[0,0], &outs[0], outs.shape[0])
-    
+
     cpdef void calc_range_repeat_angles(self,np.ndarray[float, ndim=2, mode="c"] ins,np.ndarray[float, ndim=1, mode="c"] angles, np.ndarray[float, ndim=1, mode="c"] outs):
         self.thisptr.numpy_calc_range_angles(&ins[0,0], &angles[0], &outs[0], ins.shape[0], angles.shape[0])
 
@@ -324,7 +324,7 @@ cdef class PyRayMarchingGPU:
 
     cpdef void calc_range_repeat_angles_eval_sensor_model(self,np.ndarray[float, ndim=2, mode="c"] ins,np.ndarray[float, ndim=1, mode="c"] angles, np.ndarray[float, ndim=1, mode="c"] obs, np.ndarray[double, ndim=1, mode="c"] weights):
         self.thisptr.calc_range_repeat_angles_eval_sensor_model(&ins[0,0], &angles[0], &obs[0],  &weights[0], ins.shape[0], angles.shape[0])
-    
+
     cpdef void eval_sensor_model(self, np.ndarray[float, ndim=1, mode="c"] observation, np.ndarray[float, ndim=1, mode="c"] ranges, np.ndarray[double, ndim=1, mode="c"] outs, int num_rays, int num_particles):
         self.thisptr.eval_sensor_model(&observation[0],&ranges[0], &outs[0], num_rays, num_particles)
     cpdef void set_sensor_model(self, np.ndarray[double, ndim=2, mode="c"] table):
@@ -344,4 +344,3 @@ cdef class PyNull:
         a = ins[0,0]
         b = outs[0]
         c = outs.shape[0]
-        
