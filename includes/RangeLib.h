@@ -218,6 +218,25 @@ namespace ranges {
 			}
 		}
 
+    void rosWorldToGrid(float& x, float& y) const {
+			float inv_world_scale = 1.0 / world_scale;
+			float temp;
+
+			x = (x - world_origin_x) * inv_world_scale;
+			y = (y - world_origin_y) * inv_world_scale;
+			temp = x;
+			x = world_cos_angle*x - world_sin_angle*y;
+			y = world_sin_angle*temp + world_cos_angle*y;
+			temp = x;
+			x = y;
+			y = temp;
+    }
+
+    void rosWorldToGrid(float& x, float& y, float& heading) const {
+			rosWorldToGrid(x, y);
+			heading = -heading - 1.0 * world_angle - 1.5 * M_PI;
+    }
+
 		bool get(int x, int y) { return grid[x][y]; }
 		bool isOccupied(int x, int y) {
 			if (x < 0 || x >= width || y < 0 || y >= height) return false;
@@ -228,7 +247,10 @@ namespace ranges {
 		}
 
 		// query the grid without a trace
-		bool isOccupiedNT(int x, int y) const { return grid[x][y]; }
+		bool isOccupiedNT(int x, int y) const {
+      if (x < 0 || x >= width || y < 0 || y >= height) return false;
+      return grid[x][y];
+    }
 
 		#if _MAKE_TRACE_MAP == 1
 		bool saveTrace(std::string filename) {
@@ -442,19 +464,7 @@ namespace ranges {
 
 		float ANIL calc_range(float x, float y, float heading) {
 			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			float inv_world_scale = 1.0 / map.world_scale;
-			float rotation_const = -1.0 * map.world_angle - 3.0*M_PI / 2.0;
-			float temp;
-
-			x = (x - map.world_origin_x) * inv_world_scale;
-			y = (y - map.world_origin_y) * inv_world_scale;
-			temp = x;
-			x = map.world_cos_angle*x - map.world_sin_angle*y;
-			y = map.world_sin_angle*temp + map.world_cos_angle*y;
-			temp = x;
-			x = y;
-			y = temp;
-			heading = -heading + rotation_const;
+			map.rosWorldToGrid(x, y, heading);
 			#endif
 
 			return calc_range_unconverted(x, y, heading) * map.world_scale;
@@ -462,19 +472,7 @@ namespace ranges {
 
 		std::pair<float, float> calc_range_pair(float x, float y, float heading) {
 			#if ROS_WORLD_TO_GRID_CONVERSION == 1
-			float inv_world_scale = 1.0 / map.world_scale;
-			float rotation_const = -1.0 * map.world_angle - 3.0*M_PI / 2.0;
-			float temp;
-
-			x = (x - map.world_origin_x) * inv_world_scale;
-			y = (y - map.world_origin_y) * inv_world_scale;
-			temp = x;
-			x = map.world_cos_angle*x - map.world_sin_angle*y;
-			y = map.world_sin_angle*temp + map.world_cos_angle*y;
-			temp = x;
-			x = y;
-			y = temp;
-			heading = -heading + rotation_const;
+			map.rosWorldToGrid(x, y, heading);
 			#endif
 
 			std::pair<float, float> ranges = calc_range_pair_unconverted(x, y, heading);
