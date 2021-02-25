@@ -502,7 +502,7 @@ namespace ranges {
     void numpy_calc_range_angles(float * ins, float * angles, float * outs, int num_particles, int num_angles) {
       for (int i = 0; i < num_particles; ++i) {
         for (int a = 0; a < num_angles; ++a) {
-            outs[i*num_angles+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]);
+            outs[i*num_angles+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] + angles[a]);
         }
       }
     }
@@ -560,7 +560,7 @@ namespace ranges {
         for (a = 0; a < num_angles; ++a)
         {
           r = obs[a] * inv_scale;
-          d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angles[a]) * inv_scale;
+          d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] + angles[a]) * inv_scale;
           r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
           d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
           weight *= sensor_model[(int)r][(int)d];
@@ -573,8 +573,6 @@ namespace ranges {
     // this is only exact for a certain set of downsample amounts
     void calc_range_many_radial_optimized(float * ins, float * outs, int num_particles, int num_rays, float min_angle, float max_angle) {
       // do no allocations in the main loop
-      float inv_scale = 1.0 / map.scale;
-
       int i, a = 0;
 
       float step = (max_angle - min_angle) / (num_rays - 1);
@@ -593,14 +591,14 @@ namespace ranges {
       {
         angle = min_angle;
         for (a = 0; a <= max_pairwise_index; ++a) {
-          std::tie(r, r_inv) = calc_range_pair(ins[i*3], ins[i*3+1], ins[i*3+2] - angle);
+          std::tie(r, r_inv) = calc_range_pair(ins[i*3], ins[i*3+1], ins[i*3+2] + angle);
           outs[i*num_rays+a] = r;
           outs[i*num_rays+a+index_offset] = r_inv;
           angle += step;
         }
 
         for (a = max_pairwise_index + 1; a < index_offset; ++a) {
-          outs[i*num_rays+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] - angle);
+          outs[i*num_rays+a] = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] + angle);
           angle += step;
         }
       }
