@@ -76,7 +76,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 
 // these flags determine whether to compile helper functions specially designed for 6.141 lab 5
 #define ROS_WORLD_TO_GRID_CONVERSION 1
-#define SENSOR_MODEL_HELPERS 1
+#define SENSOR_MODEL_HELPERS 0
 
 // slow unoptimized version
 // #define _USE_ALTERNATE_MOD 0
