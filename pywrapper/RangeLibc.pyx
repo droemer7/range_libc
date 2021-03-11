@@ -49,9 +49,9 @@ cdef extern from "includes/RangeLib.h" namespace "ranges":
         bool get(int x, int y)
 
         # constants for coordinate space conversion
-        float x
-        float y
-        float th
+        float x_origin
+        float y_origin
+        float th_origin
         float sin_th
         float cos_th
         float scale
@@ -161,9 +161,9 @@ cdef class PyOMap:
 
                 # cache constants for coordinate space conversion
                 angle = -1.0*quaternion_to_angle(map_msg.info.origin.orientation)
-                self.thisptr.x = map_msg.info.origin.position.x
-                self.thisptr.y = map_msg.info.origin.position.y
-                self.thisptr.th = angle
+                self.thisptr.x_origin = map_msg.info.origin.position.x
+                self.thisptr.y_origin = map_msg.info.origin.position.y
+                self.thisptr.th_origin = angle
                 self.thisptr.sin_th = np.sin(angle)
                 self.thisptr.cos_th = np.cos(angle)
                 self.thisptr.scale = map_msg.info.resolution

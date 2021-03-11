@@ -76,7 +76,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 
 // these flags determine whether to compile helper functions specially designed for 6.141 lab 5
 #define ROS_WORLD_TO_GRID_CONVERSION 1
-#define SENSOR_MODEL_HELPERS 0
+#define SENSOR_MODEL_HELPERS 1
 
 // slow unoptimized version
 // #define _USE_ALTERNATE_MOD 0
@@ -131,19 +131,19 @@ namespace ranges {
     #endif
 
     // Map to world frame conversion parameters (for ROS use)
-    float x;      // X translation of origin (cell 0,0) relative to world frame
-    float y;      // Y translation of origin (cell 0,0) relative to world frame
-    float th;     // Angle relative to world frame
-    float sin_th; // Sin of angle relative to world frame
-    float cos_th; // Cos of angle relative to world frame
-    float scale;  // Scale relative to world frame (meters per pixel)
+    float x_origin;   // X translation of origin (cell 0,0) relative to world frame
+    float y_origin;   // Y translation of origin (cell 0,0) relative to world frame
+    float th_origin;  // Angle relative to world frame
+    float sin_th;     // Sin of angle relative to world frame
+    float cos_th;     // Cos of angle relative to world frame
+    float scale;      // Scale relative to world frame (meters per pixel)
 
     OMap(int w, int h) :
       width(w),
       height(h),
-      x(0.0),
-      y(0.0),
-      th(0.0),
+      x_origin(0.0),
+      y_origin(0.0),
+      th_origin(0.0),
       sin_th(0.0),
       cos_th(1.0),
       scale(1.0),
@@ -166,9 +166,9 @@ namespace ranges {
 
     OMap(std::string filename) : OMap(filename, 128) {}
     OMap(std::string filename, float threshold) :
-      x(0.0),
-      y(0.0),
-      th(0.0),
+      x_origin(0.0),
+      y_origin(0.0),
+      th_origin(0.0),
       sin_th(0.0),
       cos_th(1.0),
       scale(1.0),
@@ -222,8 +222,8 @@ namespace ranges {
       float inv_scale = 1.0 / scale;
       float temp;
 
-      x = (x - this->x) * inv_scale;
-      y = (y - this->y) * inv_scale;
+      x = (x - x_origin) * inv_scale;
+      y = (y - y_origin) * inv_scale;
       temp = x;
       x = cos_th*x - sin_th*y;
       y = sin_th*temp + cos_th*y;
@@ -234,7 +234,7 @@ namespace ranges {
 
     void rosWorldToGrid(float& x, float& y, float& th) const {
       rosWorldToGrid(x, y);
-      th = -th - 1.0 * this->th - 1.5 * M_PI;
+      th = -th - 1.0 * th_origin - 1.5 * M_PI;
     }
 
     bool get(int x, int y) { return grid[x][y]; }
