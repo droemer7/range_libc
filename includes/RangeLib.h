@@ -239,7 +239,7 @@ namespace ranges {
 
     bool get(int x, int y) { return grid[x][y]; }
     bool isOccupied(int x, int y) {
-      if (x < 0 || x >= width || y < 0 || y >= height) return false;
+      if (x < 0 || x >= width || y < 0 || y >= height) return true;
       #if _MAKE_TRACE_MAP == 1
       trace_grid[x][y] = true;
       #endif
@@ -248,7 +248,7 @@ namespace ranges {
 
     // query the grid without a trace
     bool isOccupiedNT(int x, int y) const {
-      if (x < 0 || x >= width || y < 0 || y >= height) return false;
+      if (x < 0 || x >= width || y < 0 || y >= height) return true;
       return grid[x][y];
     }
 
