@@ -1,7 +1,7 @@
 #include <vector>
 
-#ifndef ROS_WORLD_TO_GRID_CONVERSION
-#define ROS_WORLD_TO_GRID_CONVERSION 1
+#ifndef WORLD_TO_GRID_CONVERSION
+#define WORLD_TO_GRID_CONVERSION 1
 #endif
 
 #ifndef M_PI
@@ -19,7 +19,7 @@ public:
 	void calc_range_repeat_angles_eval_sensor_model(float * ins, float * angles, float * obs, double * weights, int num_particles, int num_angles);
 
 	void set_sensor_table(double *sensor_table, int table_width);
-	
+
 private:
 	float *d_ins;
 	float *d_outs;

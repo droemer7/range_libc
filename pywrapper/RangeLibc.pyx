@@ -17,7 +17,7 @@ cdef extern from "includes/RangeLib.h":
     cdef bool _USE_LRU_CACHE "_USE_LRU_CACHE"
     cdef int  _LRU_CACHE_SIZE "_LRU_CACHE_SIZE"
     cdef bool _MAKE_TRACE_MAP "_MAKE_TRACE_MAP"
-    cdef bool ROS_WORLD_TO_GRID_CONVERSION "ROS_WORLD_TO_GRID_CONVERSION"
+    cdef bool WORLD_TO_GRID_CONVERSION "WORLD_TO_GRID_CONVERSION"
     cdef bool USE_CUDA "USE_CUDA"
 
 # define flags
@@ -29,10 +29,10 @@ NO_INLINE = _NO_INLINE
 USE_LRU_CACHE = _USE_LRU_CACHE
 LRU_CACHE_SIZE = _LRU_CACHE_SIZE
 MAKE_TRACE_MAP = _MAKE_TRACE_MAP
-USE_ROS_WORLD_TO_GRID_CONVERSION = ROS_WORLD_TO_GRID_CONVERSION
+USE_WORLD_TO_GRID_CONVERSION = WORLD_TO_GRID_CONVERSION
 SHOULD_USE_CUDA = USE_CUDA
 
-if USE_ROS_WORLD_TO_GRID_CONVERSION:
+if USE_WORLD_TO_GRID_CONVERSION:
     from nav_msgs.msg import OccupancyGrid
     import tf.transformations
 
@@ -49,12 +49,12 @@ cdef extern from "includes/RangeLib.h" namespace "ranges":
         bool get(int x, int y)
 
         # constants for coordinate space conversion
-        float x_origin
-        float y_origin
-        float th_origin
-        float sin_th
-        float cos_th
-        float scale
+        float x_origin_world
+        float y_origin_world
+        float th_world
+        float sin_th_world
+        float cos_th_world
+        float scale_world
 
     cdef cppclass BresenhamsLine:
         BresenhamsLine(OMap m, float mr)
@@ -146,7 +146,7 @@ cdef class PyOMap:
                 for y in range(height):
                     for x in range(width):
                         self.thisptr.grid[x][y] = <bool>arg1[y,x]
-            elif USE_ROS_WORLD_TO_GRID_CONVERSION and isinstance(arg1, OccupancyGrid):
+            elif USE_WORLD_TO_GRID_CONVERSION and isinstance(arg1, OccupancyGrid):
                 map_msg = arg1
                 width, height = map_msg.info.width, map_msg.info.height
                 self.thisptr = new OMap(<int>height,<int>width)
@@ -160,13 +160,13 @@ cdef class PyOMap:
                             self.thisptr.grid[x][y] = True
 
                 # cache constants for coordinate space conversion
-                angle = -1.0*quaternion_to_angle(map_msg.info.origin.orientation)
-                self.thisptr.x_origin = map_msg.info.origin.position.x
-                self.thisptr.y_origin = map_msg.info.origin.position.y
-                self.thisptr.th_origin = angle
-                self.thisptr.sin_th = np.sin(angle)
-                self.thisptr.cos_th = np.cos(angle)
-                self.thisptr.scale = map_msg.info.resolution
+                angle = quaternion_to_angle(map_msg.info.origin.orientation)
+                self.thisptr.x_origin_world = map_msg.info.origin.position.x
+                self.thisptr.y_origin_world = map_msg.info.origin.position.y
+                self.thisptr.th_world = angle
+                self.thisptr.sin_th_world = np.sin(angle)
+                self.thisptr.cos_th_world = np.cos(angle)
+                self.thisptr.scale_world = map_msg.info.resolution
             else:
                 self.thisptr = new OMap(arg1)
         else:

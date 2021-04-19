@@ -75,7 +75,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #define _GIANT_LUT_SHORT_DATATYPE 1
 
 // these flags determine whether to compile helper functions specially designed for 6.141 lab 5
-#define ROS_WORLD_TO_GRID_CONVERSION 1
+#define WORLD_TO_GRID_CONVERSION 1
 #define SENSOR_MODEL_HELPERS 1
 
 // slow unoptimized version
@@ -120,33 +120,38 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 namespace ranges {
   struct OMap
   {
-    bool has_error;
-    unsigned width;  // Number of pixels along x axis
-    unsigned height; // Number of pixels along y axis
+    // Dimensions
+    unsigned width;  // Length of x axis (pixels)
+    unsigned height; // Length of y axis (pixels)
+
+    // World to grid conversion parameters (usually for ROS use)
+    float x_origin_world; // X translation of origin (cell 0,0) relative to world frame (meters)
+    float y_origin_world; // Y translation of origin (cell 0,0) relative to world frame (meters)
+    float th_world;       // Angle relative to world frame
+    float sin_th_world;   // Sin of angle relative to world frame
+    float cos_th_world;   // Cos of angle relative to world frame
+    float scale_world;    // Scale relative to world frame (meters per pixel)
+
+    // Grids
     std::vector<std::vector<bool> > grid;
     std::vector<std::vector<float> > raw_grid;
-    std::string fn; // filename
     #if _MAKE_TRACE_MAP == 1
     std::vector<std::vector<bool> > trace_grid;
     #endif
 
-    // Map to world frame conversion parameters (for ROS use)
-    float x_origin;   // X translation of origin (cell 0,0) relative to world frame
-    float y_origin;   // Y translation of origin (cell 0,0) relative to world frame
-    float th_origin;  // Angle relative to world frame
-    float sin_th;     // Sin of angle relative to world frame
-    float cos_th;     // Cos of angle relative to world frame
-    float scale;      // Scale relative to world frame (meters per pixel)
+    // Misc
+    std::string fn; // Filename
+    bool has_error; // Indicates an error loading the map image
 
     OMap(int w, int h) :
       width(w),
       height(h),
-      x_origin(0.0),
-      y_origin(0.0),
-      th_origin(0.0),
-      sin_th(0.0),
-      cos_th(1.0),
-      scale(1.0),
+      x_origin_world(0.0),
+      y_origin_world(0.0),
+      th_world(0.0),
+      sin_th_world(0.0),
+      cos_th_world(1.0),
+      scale_world(1.0),
       fn(""),
       has_error(false)
     {
@@ -164,14 +169,19 @@ namespace ranges {
       #endif
     }
 
-    OMap(std::string filename) : OMap(filename, 128) {}
+    explicit OMap(std::string filename) :
+      OMap(filename, 128)
+    {}
+
     OMap(std::string filename, float threshold) :
-      x_origin(0.0),
-      y_origin(0.0),
-      th_origin(0.0),
-      sin_th(0.0),
-      cos_th(1.0),
-      scale(1.0),
+      width(0),
+      height(0),
+      x_origin_world(0.0),
+      y_origin_world(0.0),
+      th_world(0.0),
+      sin_th_world(0.0),
+      cos_th_world(1.0),
+      scale_world(1.0),
       fn(filename),
       has_error(false)
     {
@@ -218,23 +228,48 @@ namespace ranges {
       }
     }
 
-    void rosWorldToGrid(float& x, float& y) const {
-      float inv_scale = 1.0 / scale;
+    OMap(const unsigned int width,            // Length of x axis (pixels)
+         const unsigned int height,           // Length of y axis (pixels)
+         const float x_origin_world,          // X translation of origin (cell 0,0) relative to world frame (meters)
+         const float y_origin_world,          // Y translation of origin (cell 0,0) relative to world frame (meters)
+         const float th_world,                // Angle relative to world frame (rad)
+         const float scale_world,             // Scale relative to world frame (meters per pixel)
+         const std::vector<int8_t>& occ_data  // Occupancy data in 1D vector, -1: Unknown, 0: Free, 100: Occupied
+        ):
+      OMap(height, width) // Note: flip height and width to convert from standard X/Y coordinates to RangeLib space
+    {
+      for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+          if (occ_data[i * width + j] > 10) {
+            grid[i][j] = true;
+          }
+        }
+      }
+      this->x_origin_world = x_origin_world;
+      this->y_origin_world = y_origin_world;
+      this->th_world = th_world;
+      this->sin_th_world = std::sin(th_world);
+      this->cos_th_world = std::cos(th_world);
+      this->scale_world = scale_world;
+    }
+
+    void worldToGrid(float& x, float& y) const {
+      float inv_scale_world = 1.0 / scale_world;
       float temp;
 
-      x = (x - x_origin) * inv_scale;
-      y = (y - y_origin) * inv_scale;
+      x = (x - x_origin_world) * inv_scale_world;
+      y = (y - y_origin_world) * inv_scale_world;
       temp = x;
-      x = cos_th*x - sin_th*y;
-      y = sin_th*temp + cos_th*y;
+      x =   cos_th_world * x    + sin_th_world * y;
+      y = - sin_th_world * temp + cos_th_world * y;
       temp = x;
       x = y;
       y = temp;
     }
 
-    void rosWorldToGrid(float& x, float& y, float& th) const {
-      rosWorldToGrid(x, y);
-      th = -th - 1.0 * th_origin - 1.5 * M_PI;
+    void worldToGrid(float& x, float& y, float& th) const {
+      worldToGrid(x, y);
+      th = -th + th_world - 1.5 * M_PI;
     }
 
     bool get(int x, int y) { return grid[x][y]; }
@@ -463,21 +498,21 @@ namespace ranges {
     float memory() { return -1; }
 
     float ANIL calc_range(float x, float y, float heading) {
-      #if ROS_WORLD_TO_GRID_CONVERSION == 1
-      map.rosWorldToGrid(x, y, heading);
+      #if WORLD_TO_GRID_CONVERSION == 1
+      map.worldToGrid(x, y, heading);
       #endif
 
-      return calc_range_unconverted(x, y, heading) * map.scale;
+      return calc_range_unconverted(x, y, heading) * map.scale_world;
     }
 
     std::pair<float, float> calc_range_pair(float x, float y, float heading) {
-      #if ROS_WORLD_TO_GRID_CONVERSION == 1
-      map.rosWorldToGrid(x, y, heading);
+      #if WORLD_TO_GRID_CONVERSION == 1
+      map.worldToGrid(x, y, heading);
       #endif
 
       std::pair<float, float> ranges = calc_range_pair_unconverted(x, y, heading);
-      ranges.first *= map.scale;
-      ranges.second *= map.scale;
+      ranges.first *= map.scale_world;
+      ranges.second *= map.scale_world;
       return ranges;
     }
 
@@ -522,7 +557,7 @@ namespace ranges {
 
     void eval_sensor_model(float * obs, float * ranges, double * outs, int rays_per_particle, int particles) {
       // do no allocations in the main loop
-      float inv_scale = 1.0 / map.scale;
+      float inv_scale_world = 1.0 / map.scale_world;
       double weight;
       float r;
       float d;
@@ -534,8 +569,8 @@ namespace ranges {
         weight = 1.0;
         for (j = 0; j < rays_per_particle; ++j)
         {
-          r = obs[j] * inv_scale;
-          d = ranges[i*rays_per_particle+j] * inv_scale;
+          r = obs[j] * inv_scale_world;
+          d = ranges[i*rays_per_particle+j] * inv_scale_world;
           r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
           d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
           weight *= sensor_model[(int)r][(int)d];
@@ -547,7 +582,7 @@ namespace ranges {
     // calc range for each pose, adding every angle, evaluating the sensor model
     void calc_range_repeat_angles_eval_sensor_model(float * ins, float * angles, float * obs, double * weights, int num_particles, int num_angles) {
       // do no allocations in the main loop
-      float inv_scale = 1.0 / map.scale;
+      float inv_scale_world = 1.0 / map.scale_world;
       double weight;
       float r;
       float d;
@@ -559,8 +594,8 @@ namespace ranges {
         weight = 1.0;
         for (a = 0; a < num_angles; ++a)
         {
-          r = obs[a] * inv_scale;
-          d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] + angles[a]) * inv_scale;
+          r = obs[a] * inv_scale_world;
+          d = calc_range(ins[i*3], ins[i*3+1], ins[i*3+2] + angles[a]) * inv_scale_world;
           r = std::min<float>(std::max<float>(r,0.0),(float)sensor_model.size()-1.0);
           d = std::min<float>(std::max<float>(d,0.0),(float)sensor_model.size()-1.0);
           weight *= sensor_model[(int)r][(int)d];
@@ -757,8 +792,8 @@ namespace ranges {
     // for the inputs and a 1xn numpy array of the outputs
     void numpy_calc_range(float * ins, float * outs, int num_casts) {
       #if USE_CUDA == 1
-      #if ROS_WORLD_TO_GRID_CONVERSION == 0
-      std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
+      #if WORLD_TO_GRID_CONVERSION == 0
+      std::cout << "Cannot use GPU numpy_calc_range without WORLD_TO_GRID_CONVERSION == 1" << std::endl;
       return;
       #endif
       maybe_warn(num_casts);
@@ -775,8 +810,8 @@ namespace ranges {
 
     void numpy_calc_range_angles(float * ins, float * angles, float * outs, int num_particles, int num_angles) {
       #if USE_CUDA == 1
-      #if ROS_WORLD_TO_GRID_CONVERSION == 0
-      std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
+      #if WORLD_TO_GRID_CONVERSION == 0
+      std::cout << "Cannot use GPU numpy_calc_range without WORLD_TO_GRID_CONVERSION == 1" << std::endl;
       return;
       #endif
 
@@ -812,8 +847,8 @@ namespace ranges {
     // calc range for each pose, adding every angle, evaluating the sensor model
     void calc_range_repeat_angles_eval_sensor_model(float * ins, float * angles, float * obs, double * weights, int num_particles, int num_angles) {
       #if USE_CUDA == 1
-      #if ROS_WORLD_TO_GRID_CONVERSION == 0
-      std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
+      #if WORLD_TO_GRID_CONVERSION == 0
+      std::cout << "Cannot use GPU numpy_calc_range without WORLD_TO_GRID_CONVERSION == 1" << std::endl;
       return;
       #endif
 
