@@ -228,20 +228,20 @@ namespace ranges {
       }
     }
 
-    OMap(const unsigned int width,            // Length of x axis (pixels)
-         const unsigned int height,           // Length of y axis (pixels)
-         const float x_origin_world,          // X translation of origin (cell 0,0) relative to world frame (meters)
-         const float y_origin_world,          // Y translation of origin (cell 0,0) relative to world frame (meters)
-         const float th_world,                // Angle relative to world frame (rad)
-         const float scale_world,             // Scale relative to world frame (meters per pixel)
-         const std::vector<int8_t>& occ_data  // Occupancy data in 1D vector, -1: Unknown, 0: Free, 100: Occupied
-        ):
-      OMap(height, width) // Note: flip height and width to convert from standard X/Y coordinates to RangeLib space
+    OMap(const unsigned int width,      // Length of x axis (pixels)
+         const unsigned int height,     // Length of y axis (pixels)
+         const float x_origin_world,    // X translation of origin (cell 0,0) relative to world frame (meters)
+         const float y_origin_world,    // Y translation of origin (cell 0,0) relative to world frame (meters)
+         const float th_world,          // Angle relative to world frame (rad)
+         const float scale_world,       // Scale relative to world frame (meters per pixel)
+         const std::vector<bool>& data = std::vector<bool>()  // Occupancy data in 1D vector, true: Occupied
+        ) :
+      OMap(height, width) // Note: flip height and width to convert to RangeLib map where grid is indexed grid[y][x]
     {
-      for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
-          if (occ_data[i * width + j] > 10) {
-            grid[i][j] = true;
+      if (data.size() > 0) {
+        for (int i = 0; i < height; ++i) {
+          for (int j = 0; j < width; ++j) {
+            grid[i][j] = data[i * width + j];
           }
         }
       }
@@ -251,6 +251,29 @@ namespace ranges {
       this->sin_th_world = std::sin(th_world);
       this->cos_th_world = std::cos(th_world);
       this->scale_world = scale_world;
+    }
+
+    OMap(const unsigned int width,        // Length of x axis (pixels)
+         const unsigned int height,       // Length of y axis (pixels)
+         const float x_origin_world,      // X translation of origin (cell 0,0) relative to world frame (meters)
+         const float y_origin_world,      // Y translation of origin (cell 0,0) relative to world frame (meters)
+         const float th_world,            // Angle relative to world frame (rad)
+         const float scale_world,         // Scale relative to world frame (meters per pixel)
+         const std::vector<int8_t>& data  // Occupancy data in 1D vector, -1: Unknown, 0: Free, 100: Occupied
+        ) :
+      OMap(width,
+           height,
+           x_origin_world,
+           y_origin_world,
+           th_world,
+           scale_world
+          )
+    {
+      for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+          grid[i][j] = data[i * width + j] > 10;
+        }
+      }
     }
 
     void worldToGrid(float& x, float& y) const {
