@@ -764,6 +764,7 @@ namespace ranges {
       distImage = new DistanceTransform(&m);
       #if USE_CUDA == 1
       rmc = new RayMarchingCUDA(distImage->grid, distImage->width, distImage->height, max_range);
+      rmc->set_conversion_params(m.x_origin_world, m.y_origin_world, m.th_world, m.sin_th_world, m.cos_th_world, m.scale_world);
 
       #else
       throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");

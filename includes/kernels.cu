@@ -67,9 +67,12 @@ __global__ void cuda_ray_marching_world_to_grid(float * ins, float * outs, float
 	// convert x0,y0,theta from world to grid space coordinates
 	float x0 = (x_world - x_origin_world) * inv_scale_world;
 	float y0 = (y_world - y_origin_world) * inv_scale_world;
+
+  // Careful - th_world is the angle of the map in the world frame, thus it converts from map to world
+  // To convert from world to map, we need to use the inverse rotation matrix here
 	float temp = x0;
-	x0 = cos_th_world*x0 - sin_th_world*y0;
-	y0 = sin_th_world*temp + cos_th_world*y0;
+	x0 =   cos_th_world * x0   + sin_th_world * y0;
+	y0 = - sin_th_world * temp + cos_th_world * y0;
 	float theta = -theta_world + rotation_const;
 
 	// swap components
@@ -123,9 +126,12 @@ __global__ void cuda_ray_marching_angles_world_to_grid(float * ins, float * outs
 	// convert x0,y0,theta from world to grid space coordinates
 	float x0 = (x_world - x_origin_world) * inv_scale_world;
 	float y0 = (y_world - y_origin_world) * inv_scale_world;
+
+  // Careful - th_world is the angle of the map in the world frame, thus it converts from map to world
+  // To convert from world to map, we need to use the inverse rotation matrix here
 	float temp = x0;
-	x0 = cos_th_world*x0 - sin_th_world*y0;
-	y0 = sin_th_world*temp + cos_th_world*y0;
+	x0 =   cos_th_world * x0   + sin_th_world * y0;
+	y0 = - sin_th_world * temp + cos_th_world * y0;
 	float theta = -theta_world + rotation_const - ins[num_particles * 3 + angle_ind];
 
 	// swap components

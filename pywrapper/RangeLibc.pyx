@@ -41,6 +41,14 @@ cdef extern from "includes/RangeLib.h" namespace "ranges":
         OMap(int w, int h)
         OMap(string filename)
         OMap(string filename, float threshold)
+        OMap(unsigned int width,
+             unsigned int height,
+             float x_origin_world,
+             float y_origin_world,
+             float th_world,
+             float scale_world,
+             vector[signed char] data
+            )
         unsigned width
         unsigned height
         vector[vector[bool]] grid
@@ -148,25 +156,14 @@ cdef class PyOMap:
                         self.thisptr.grid[x][y] = <bool>arg1[y,x]
             elif USE_WORLD_TO_GRID_CONVERSION and isinstance(arg1, OccupancyGrid):
                 map_msg = arg1
-                width, height = map_msg.info.width, map_msg.info.height
-                self.thisptr = new OMap(<int>height,<int>width)
-
-                # 0: permissible, -1: unmapped, 100: blocked
-                array_255 = np.array(map_msg.data).reshape((height, width))
-
-                for x in range(height):
-                    for y in range(width):
-                        if array_255[x,y] > 10:
-                            self.thisptr.grid[x][y] = True
-
-                # cache constants for coordinate space conversion
-                angle = quaternion_to_angle(map_msg.info.origin.orientation)
-                self.thisptr.x_origin_world = map_msg.info.origin.position.x
-                self.thisptr.y_origin_world = map_msg.info.origin.position.y
-                self.thisptr.th_world = angle
-                self.thisptr.sin_th_world = np.sin(angle)
-                self.thisptr.cos_th_world = np.cos(angle)
-                self.thisptr.scale_world = map_msg.info.resolution
+                self.thisptr = new OMap(<unsigned int>map_msg.info.width,
+                                        <unsigned int>map_msg.info.height,
+                                        <float>map_msg.info.origin.position.x,
+                                        <float>map_msg.info.origin.position.y,
+                                        <float>quaternion_to_angle(map_msg.info.origin.orientation),
+                                        <float>map_msg.info.resolution,
+                                        <vector[signed char]>map_msg.data
+                                       )
             else:
                 self.thisptr = new OMap(arg1)
         else:
