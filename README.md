@@ -2,7 +2,7 @@
 
 ## Foreword
 
-This is a fork of the [original range_libc repo](https://github.com/kctess5/range_libc). Some corrections were necessary to make this work with ROS in C++, and some additional cleanup / refactoring was done to clean up the implementation a bit. Since making these changes, the CDDT implementation has been checked out in C++ and Python, but the other raycasting methods have only been briefly tested. The Ray Marching GPU implementation has not been tested. 
+This is a fork of the [abandoned range_libc repo](https://github.com/kctess5/range_libc). Some corrections were necessary to make this work with ROS in C++, and some additional cleanup / refactoring was done to clean up the implementation a bit. Since making these changes, the CDDT implementation has been checked out in C++ and Python, but the other raycasting methods have only been briefly tested. The Ray Marching GPU implementation has not been tested. 
 
 ## Overview
 
