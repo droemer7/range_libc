@@ -1,48 +1,30 @@
 # RangeLibc
 
-This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
+## Foreword
 
-WARNING: this is currently in a slightly weird state in preparation for 6.141 lab 5. I will try to fix up all the compile flags to work with both use cases soon.
+This is a fork of the [original range_libc repo](https://github.com/kctess5/range_libc). Some corrections were necessary to make this work with ROS in C++, and some additional cleanup / refactoring was done to clean up the implementation a bit. Since making these changes, the CDDT implementation has been checked out in C++ and Python, but the other raycasting methods have only been briefly tested. The Ray Marching GPU implementation has not been tested. 
+
+## Overview
+
+This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
 ## Building the Code
 
-The following has been tested on Ubuntu 14.04, OSX 10.10, and Ubuntu 16.06. Hopefully it will work on other systems as well, or will at least be not too difficult to fix.
+This fork has been tested on Ubuntu 18.04 and 20.04 using gcc with C++14. The original author has tested it on Ubuntu 14.04, OSX 10.10, and Ubuntu 16.06, compiling with C++11.
 
 ### C++ code
 
-```
-# clone the repository
-git clone https://github.com/kctess5/range_libc
-cd range_libc
-mkdir build
-cd build
-cmake ..
-make
-```
-
-If you get an error about having the wrong version of CMake, install a version of CMake that is less than or equal to 3.6 (I use 3.6) from here: https://cmake.org/download/
-
-If you don't want to update your system's version of CMake, simply:
-
-```
-# unzip cmake download and cd into that directory
-mkdir build
-cd build
-cmake ..
-make
-# 3.6 should be your cmake version number
-sudo ln -s [path to cmake directory]/build/bin/cmake /usr/bin/cmake3.6
-```
-
-Then use cmake3.6 instead of cmake in the above instructions for building the range_lib code.
+This is a header-only library; simply include it with your project.
 
 ### Python Wrappers
 
-To build the code and its associated Python wrappers for use in Python code, do the following. You may have to install Cython if you do not already have it on your system.
+This fork has updated the original repo to compile on systems that do not have python 2 (such as Ubuntu 20.04). If you have both versions and you want to build the wrappers for a specific version of python, replace `python` below with the version you want to use (e.g. `python3`).
+
+You will also need to install Cython if you do not already have it on your system.
 
 ```
 # clone the repository
-git clone https://github.com/kctess5/range_libc
+git clone https://github.com/droemery/range_libc
 cd range_libc_dist/pywrapper
 # for an in place build, do this:
 python setup.py build_ext --inplace
@@ -52,25 +34,6 @@ python setup.py install
 WITH_CUDA=ON python setup.py install
 # this should take a few seconds to run
 python test.py
-```
-
-To see example usage of the Python wrappers (using the ROS specific helpers) see [https://github.com/mit-racecar/particle_filter](https://github.com/mit-racecar/particle_filter). See the [/docs](/docs) folder for documentation.
-
-### Building on a RACECAR
-
-MIT's 6.141 uses this library for accelerating particle filters onboard the RACECAR platform. To install this on the Jetson TX1, do:
-
-```
-# Copy the code
-cd range_libc
-# this part is not strictly necessary, but useful for debugging compilation issues
-mkdir build
-cmake ..
-make
-# To build the Python wrappers
-sudo apt-get install Cython
-cd pywrapper
-sudo WITH_CUDA=ON python setup.py install
 ```
 
 ## License
