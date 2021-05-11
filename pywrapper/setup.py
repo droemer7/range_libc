@@ -94,9 +94,9 @@ def locate_cuda():
 # compiler_flags = ["-w","-std=c++11", "-march=native", "-ffast-math", "-fno-math-errno"]
 compiler_flags = ["-w","-std=c++11", "-march=native", "-ffast-math", "-fno-math-errno", "-O3"]
 nvcc_flags = ['-arch=sm_72', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", "-w","-std=c++11"]
-include_dirs = ["../", numpy_include]
-depends = ["../includes/*.h"]
-sources = ["RangeLibc.pyx","../vendor/lodepng/lodepng.cpp"]
+include_dirs = ["../include", numpy_include]
+depends = ["../include/range_libc/*.h"]
+sources = ["RangeLibc.pyx","../include/vendor/lodepng/lodepng.cpp"]
 
 CHUNK_SIZE = "262144"
 NUM_THREADS = "256"
@@ -108,7 +108,7 @@ if use_cuda:
 
     CUDA = locate_cuda()
     include_dirs.append(CUDA['include'])
-    sources.append("../includes/kernels.cu")
+    sources.append("../src/kernels.cu")
 
 if trace:
 	compiler_flags.append("-D_MAKE_TRACE_MAP=1")
@@ -161,7 +161,7 @@ class custom_build_ext(build_ext):
         build_ext.build_extensions(self)
 
 if use_cuda:
-    ext = Extension("range_libc", sources, 
+    ext = Extension("range_libc", sources,
                     extra_compile_args = {'gcc': compiler_flags, 'nvcc': nvcc_flags},
                     extra_link_args = ["-std=c++11"],
                     include_dirs = include_dirs,

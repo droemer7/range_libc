@@ -7,7 +7,7 @@ import numpy as np
 cimport numpy as np
 from cython.operator cimport dereference as deref
 
-cdef extern from "includes/RangeLib.h":
+cdef extern from "range_libc/RangeLib.h":
     # define flags
     cdef bool _USE_CACHED_TRIG "_USE_CACHED_TRIG"
     cdef bool _USE_ALTERNATE_MOD "_USE_ALTERNATE_MOD"
@@ -36,7 +36,7 @@ if USE_WORLD_TO_GRID_CONVERSION:
     from nav_msgs.msg import OccupancyGrid
     import tf.transformations
 
-cdef extern from "includes/RangeLib.h" namespace "ranges":
+cdef extern from "range_libc/RangeLib.h" namespace "ranges":
     cdef cppclass OMap:
         OMap(int w, int h)
         OMap(string filename)

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>range_libc</name>
+  <version>1.0.0</version>
+  <description>ROS package for range_libc</description>
+  <maintainer email="droemer7@gmail.com">Dane Roemer</maintainer>
+  <author email="corey.walsh11@gmail.com">Corey Walsh</author>
+  <license>Apache License, Version 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

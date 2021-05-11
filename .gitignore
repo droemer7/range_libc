@@ -1,15 +1,8 @@
-paper/
 build/
-tmp/
 pywrapper/*.so
 pywrapper/*.cpp
 pywrapper/*.png
-.DS_Store
-paper/data/basement
-paper/data/synthetic
 ._.*
-paper/bak
-pywrapper/watch.sh
 
 # VS Code
 .vscode
