@@ -17,7 +17,8 @@ This fork has been tested on Ubuntu 18.04 and 20.04 using gcc with C++14. The or
 Again, it is assumed you are using ROS. If not, you will need to pull the headers and modify the CMakeLists.txt to suit your needs. 
 
 ```
-roscd && cd ..
+roscd
+cd ../src
 git clone https://github.com/droemer7/range_libc
 ```
 
