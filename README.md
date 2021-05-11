@@ -2,7 +2,7 @@
 
 ## Foreword
 
-This is a fork of the [abandoned range_libc repo](https://github.com/kctess5/range_libc). Some corrections were necessary to make this work with ROS in C++, and some additional cleanup / refactoring was done to clean up the implementation a bit. Since making these changes, the CDDT implementation has been checked out in C++ and Python, but the other raycasting methods have only been briefly tested. The Ray Marching GPU implementation has not been tested. 
+This is a fork of the [abandoned range_libc repo](https://github.com/kctess5/range_libc) that has been **converted to a ROS package** to better align with my use case. Some corrections to the range_libc code base were necessary to make this work with ROS C++, and some additional refactoring was done to clean up the implementation. Since making these changes, the CDDT implementation has been checked for correctness in C++ and Python 3, and Bresenham's Line and Ray Marching have been similarly checked in Python 3. The Ray Marching GPU implementation has not been tested in any form.
 
 ## Overview
 
@@ -14,7 +14,14 @@ This fork has been tested on Ubuntu 18.04 and 20.04 using gcc with C++14. The or
 
 ### C++ code
 
-This is a header-only library; simply include it with your project.
+Again, it is assumed you are using ROS. If not, you will need to pull the headers and modify the CMakeLists.txt to suit your needs. 
+
+```
+roscd && cd ..
+git clone https://github.com/droemer7/range_libc
+```
+
+Include `range_libc/RangeLib.h` in your code to use the raycasters, then invoke `catkin_make` to build. For optimization and assuming you are not distributing binaries, use `-DCMAKE_CXX_FLAGS=-march=native -O3`. The original author of `range_libc` also used `-ffast-math` and `-fno-math-errno` but I have not seen any improvement with these.
 
 ### Python Wrappers
 
@@ -24,7 +31,7 @@ You will also need to install Cython if you do not already have it on your syste
 
 ```
 # clone the repository
-git clone https://github.com/droemery/range_libc
+git clone https://github.com/droemer7/range_libc
 cd range_libc_dist/pywrapper
 # for an in place build, do this:
 python setup.py build_ext --inplace
